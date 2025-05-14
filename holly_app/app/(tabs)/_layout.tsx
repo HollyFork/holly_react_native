@@ -33,6 +33,12 @@ export default function AppLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen 
+        name="commandes"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

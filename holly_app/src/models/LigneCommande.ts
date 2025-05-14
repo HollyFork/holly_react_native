@@ -7,8 +7,9 @@ interface CommandeBase {
 
 export interface LigneCommande {
   id: number;
-  commande: CommandeBase;
+  commande: string; // URL de la commande
   article: Article;
   quantite: number;
   prix_unitaire: number;
+  article_id: number;
 } 

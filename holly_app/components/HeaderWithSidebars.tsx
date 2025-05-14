@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { usePathname } from 'expo-router';
+import { usePathname, router } from 'expo-router';
 import { useRestaurants } from '@/contexts/RestaurantContext';
 import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
@@ -53,6 +53,12 @@ export function HeaderWithSidebars({ restaurantName }: HeaderWithSidebarsProps) 
     setIsNavbarOpen(!isNavbarOpen);
     if (isSidebarOpen) setIsSidebarOpen(false);
   };
+
+  const handleTitlePress = () => {
+    if (pathname !== '/(tabs)/dashboard') {
+      router.push('/(tabs)/dashboard');
+    }
+  };
   
   const handleRestaurantSelect = async (sidebarRestaurant: { id: string; name: string }) => {
     const restaurant = restaurants.find(r => r.id_restaurant.toString() === sidebarRestaurant.id);
@@ -81,12 +87,18 @@ export function HeaderWithSidebars({ restaurantName }: HeaderWithSidebarsProps) 
             onPress={toggleSidebar}
             activeOpacity={0.7}
           >
-            <CustomIcon name="apartment" color={colors.primary} size={24} />
+            <CustomIcon name="office-building-cog" color={colors.primary} size={24} />
           </TouchableOpacity>
           
-          <ThemedText type="subtitle" style={styles.title}>
-            {restaurantName}
-          </ThemedText>
+          <TouchableOpacity
+            style={styles.titleContainer}
+            onPress={handleTitlePress}
+            activeOpacity={0.7}
+          >
+            <ThemedText type="subtitle" style={[styles.title, { color: colors.primary }]}>
+              {restaurantName}
+            </ThemedText>
+          </TouchableOpacity>
           
           <TouchableOpacity
             style={styles.iconButton}
@@ -132,11 +144,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
-  title: {
+  titleContainer: {
     flex: 1,
-    textAlign: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  title: {
     fontSize: 18,
     fontWeight: '600',
+    textAlign: 'center',
   },
   iconButton: {
     width: 40,

@@ -1,58 +1,49 @@
 import React, { useState, useMemo } from 'react';
 import { View, FlatList, RefreshControl, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { useReservations } from '@/hooks/useReservations';
+import { useCommandes } from '@/hooks/useCommandes';
 import { Colors } from '@/constants/Colors';
 import { CustomIcon } from '@/components/CustomIcon';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Reservation } from '@/src/models';
+import { Commande } from '@/src/models';
 import { HeaderWithSidebars } from '@/components/HeaderWithSidebars';
 import { useRestaurants } from '@/contexts/RestaurantContext';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { router } from 'expo-router';
 
 const FILTERS = [
-  { key: 'TOUTES', label: 'Toutes' },
-  { key: 'AUJOURDHUI', label: "Aujourd'hui" },
-  { key: 'A_VENIR', label: 'À venir' },
-  { key: 'PASSEES', label: 'Passées' },
+  { key: 'TOUS', label: 'Toutes' },
+  { key: 'EN_COURS', label: 'En cours' },
+  { key: 'VALIDEE', label: 'Validées' },
+  { key: 'ANNULEE', label: 'Annulées' },
 ];
 
-function filterReservations(reservations: Reservation[], filter: string): Reservation[] {
-  const now = new Date();
-  switch (filter) {
-    case 'AUJOURDHUI':
-      return reservations.filter((r: Reservation) => {
-        const d = new Date(r.date_heure);
-        return d.toDateString() === now.toDateString();
-      });
-    case 'A_VENIR':
-      return reservations.filter((r: Reservation) => new Date(r.date_heure) > now);
-    case 'PASSEES':
-      return reservations.filter((r: Reservation) => new Date(r.date_heure) < now);
-    default:
-      return reservations;
-  }
+function filterCommandes(commandes: Commande[], filter: string): Commande[] {
+  if (filter === 'TOUS') return commandes;
+  return commandes.filter(cmd => cmd.statut === filter);
 }
 
-export default function ReservationsScreen() {
+export default function CommandesScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const { selectedRestaurant } = useRestaurants();
-  const { reservations, loading, refreshReservations } = useReservations(selectedRestaurant?.id_restaurant || null);
-  const [filter, setFilter] = useState('TOUTES');
+  const { commandes, loading, refreshCommandes } = useCommandes(selectedRestaurant?.id_restaurant || null);
+  const [filter, setFilter] = useState('TOUS');
 
-  const filtered = useMemo(() => filterReservations(reservations, filter), [reservations, filter]);
+  const filtered = useMemo(() => filterCommandes(commandes, filter), [commandes, filter]);
 
   // Statistiques
-  const total = reservations.length;
-  const today = filterReservations(reservations, 'AUJOURDHUI').length;
-  const upcoming = filterReservations(reservations, 'A_VENIR').length;
+  const total = commandes.length;
+  const enCours = commandes.filter(cmd => cmd.statut === 'EN_COURS').length;
+  const validees = commandes.filter(cmd => cmd.statut === 'VALIDEE').length;
 
   const getFilterStyle = (filterKey: string) => {
     switch (filterKey) {
-      case 'AUJOURDHUI':
+      case 'EN_COURS':
         return { backgroundColor: '#fff7e6', borderColor: colors.primary };
-      case 'A_VENIR':
+      case 'VALIDEE':
         return { backgroundColor: '#e6f0ff', borderColor: '#3b82f6' };
-      case 'PASSEES':
+      case 'ANNULEE':
         return { backgroundColor: '#f5f5f5', borderColor: '#888' };
       default:
         return { backgroundColor: '#eee', borderColor: '#ccc' };
@@ -61,32 +52,35 @@ export default function ReservationsScreen() {
 
   const getFilterTextStyle = (filterKey: string) => {
     switch (filterKey) {
-      case 'AUJOURDHUI':
+      case 'EN_COURS':
         return { color: colors.primary };
-      case 'A_VENIR':
+      case 'VALIDEE':
         return { color: '#3b82f6' };
-      case 'PASSEES':
+      case 'ANNULEE':
         return { color: '#666' };
       default:
         return { color: colors.text };
     }
   };
 
-  const getReservationCardStyle = (date: string) => {
-    const reservationDate = new Date(date);
-    const now = new Date();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    if (reservationDate.toDateString() === now.toDateString()) {
-      return { backgroundColor: '#fff7e6', borderLeftColor: colors.primary };
-    } else if (reservationDate > now) {
-      return { backgroundColor: '#e6f0ff', borderLeftColor: '#3b82f6' };
-    } else {
-      return { backgroundColor: '#f5f5f5', borderLeftColor: '#888' };
+  const getCommandeCardStyle = (statut: Commande['statut']) => {
+    switch (statut) {
+      case 'EN_COURS':
+        return { backgroundColor: '#fff7e6', borderLeftColor: colors.primary };
+      case 'VALIDEE':
+        return { backgroundColor: '#e6f0ff', borderLeftColor: '#3b82f6' };
+      case 'ANNULEE':
+        return { backgroundColor: '#f5f5f5', borderLeftColor: '#888' };
+      default:
+        return { backgroundColor: '#fff', borderLeftColor: '#ccc' };
     }
+  };
+
+  const handleCommandePress = (commandeId: number) => {
+    router.push({
+      pathname: "/(tabs)/commande/[id]",
+      params: { id: commandeId }
+    });
   };
 
   if (!selectedRestaurant) {
@@ -126,7 +120,7 @@ export default function ReservationsScreen() {
             </TouchableOpacity>
           ))}
         </ScrollView>
-        <TouchableOpacity onPress={refreshReservations} style={styles.refreshBtn}>
+        <TouchableOpacity onPress={refreshCommandes} style={styles.refreshBtn}>
           <CustomIcon name="refresh" size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
@@ -137,39 +131,55 @@ export default function ReservationsScreen() {
           <Text style={[styles.statLabel, { fontWeight: '800' }]}>Total</Text>
         </View>
         <View style={[styles.statBox, { backgroundColor: '#fff7e6' }]}> 
-          <Text style={[styles.statValue, { color: colors.primary }]}>{today}</Text>
-          <Text style={[styles.statLabel, { color: colors.primary }]}>Aujourd'hui</Text>
+          <Text style={[styles.statValue, { color: colors.primary }]}>{enCours}</Text>
+          <Text style={[styles.statLabel, { color: colors.primary }]}>En cours</Text>
         </View>
         <View style={[styles.statBox, { backgroundColor: '#e6f0ff' }]}> 
-          <Text style={[styles.statValue, { color: '#3b82f6' }]}>{upcoming}</Text>
-          <Text style={[styles.statLabel, { color: '#3b82f6' }]}>À venir</Text>
+          <Text style={[styles.statValue, { color: '#3b82f6' }]}>{validees}</Text>
+          <Text style={[styles.statLabel, { color: '#3b82f6' }]}>Validées</Text>
         </View>
       </View>
-      {/* Liste des réservations */}
+      {/* Liste des commandes */}
       <FlatList
         data={filtered}
         keyExtractor={item => String(item.id)}
         contentContainerStyle={{ padding: 10, paddingBottom: 30 }}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={refreshReservations} />}
-        renderItem={({ item }: { item: Reservation }) => (
-          <View style={[
-            styles.reservationCard,
-            getReservationCardStyle(item.date_heure)
-          ]}>
-            <CustomIcon name="calendar-clock" size={32} color={colors.icon} style={{ marginRight: 12 }} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.reservationName}>{item.nom_client}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-                <CustomIcon name="clock-time-four" size={16} color={colors.icon} />
-                <Text style={styles.reservationDate}>{new Date(item.date_heure).toLocaleDateString()} {new Date(item.date_heure).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
-                <CustomIcon name="account-group" size={16} color={colors.icon} style={{ marginLeft: 10 }} />
-                <Text style={styles.reservationPeople}>{item.nombre_personnes} pers.</Text>
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={refreshCommandes} />}
+        renderItem={({ item }: { item: Commande }) => {
+          const date = new Date(item.created_at);
+          const formattedDate = format(date, 'dd MMM yyyy HH:mm', { locale: fr });
+          
+          return (
+            <TouchableOpacity 
+              style={[
+                styles.commandeCard,
+                getCommandeCardStyle(item.statut)
+              ]}
+              onPress={() => handleCommandePress(item.id)}
+            >
+              <CustomIcon name="cart" size={32} color={colors.icon} style={{ marginRight: 12 }} />
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={styles.commandeId}>Commande #{item.id}</Text>
+                  <CustomIcon name="chevron-right" size={24} color={colors.icon} />
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                  <CustomIcon name="clock-time-four" size={16} color={colors.icon} />
+                  <Text style={styles.commandeDate}>{formattedDate}</Text>
+                  <CustomIcon name="currency-eur" size={16} color={colors.icon} style={{ marginLeft: 10 }} />
+                  <Text style={styles.commandeMontant}>{Number(item.montant).toFixed(2)} €</Text>
+                  {item.table && (
+                    <>
+                      <CustomIcon name="silverware-fork-knife" size={16} color={colors.icon} style={{ marginLeft: 10 }} />
+                      <Text style={styles.commandeTable}>Table {item.table.numero}</Text>
+                    </>
+                  )}
+                </View>
               </View>
-            </View>
-            <CustomIcon name="chevron-right" size={24} color={colors.icon} />
-          </View>
-        )}
-        ListEmptyComponent={<Text style={{ textAlign: 'center', color: colors.icon, marginTop: 40 }}>Aucune réservation</Text>}
+            </TouchableOpacity>
+          );
+        }}
+        ListEmptyComponent={<Text style={{ textAlign: 'center', color: colors.icon, marginTop: 40 }}>Aucune commande</Text>}
       />
     </View>
   );
@@ -239,7 +249,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 16,
   },
-  reservationCard: {
+  commandeCard: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 12,
@@ -250,18 +260,24 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
     borderLeftWidth: 4,
+    backgroundColor: '#fff',
   },
-  reservationName: {
+  commandeId: {
     fontWeight: 'bold',
     fontSize: 16,
     color: '#222',
   },
-  reservationDate: {
+  commandeDate: {
     color: '#888',
     fontSize: 13,
     marginLeft: 4,
   },
-  reservationPeople: {
+  commandeMontant: {
+    color: '#888',
+    fontSize: 13,
+    marginLeft: 4,
+  },
+  commandeTable: {
     color: '#888',
     fontSize: 13,
     marginLeft: 4,

@@ -137,7 +137,7 @@ export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
   const navItems: NavItem[] = [
     { id: '1', title: 'Tableau de bord', icon: 'dashboard', route: '/(tabs)/dashboard' },
     { id: '2', title: 'Réservations', icon: 'event', route: '/(tabs)/reservations' },
-    { id: '3', title: 'Commandes', icon: 'shopping_bag', route: '/(tabs)/orders' },
+    { id: '3', title: 'Commandes', icon: 'shopping_bag', route: '/(tabs)/commandes' },
     { id: '4', title: 'Statistiques', icon: 'assessment', route: '/(tabs)/stats' },
     { id: '5', title: 'Paramètres', icon: 'settings', route: '/(tabs)/settings' },
     { id: '6', title: 'Support', icon: 'help', route: '/(tabs)/support' },

@@ -1,22 +1,6 @@
 import { useState, useEffect } from 'react';
-import { API_URL } from '../constants/Config';
-
-export interface Reservation {
-  id: number;
-  nom_client: string;
-  nombre_personnes: number;
-  date_heure: string;
-  telephone: string;
-  salle: {
-    id: number;
-    nom_salle: string;
-    restaurant: {
-      id_restaurant: number;
-      nom_restaurant: string;
-    };
-    capacite: number;
-  };
-}
+import { Reservation } from '@/src/models';
+import { reservationService } from '@/src/services';
 
 export function useReservations(restaurantId: number | null) {
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -33,13 +17,7 @@ export function useReservations(restaurantId: number | null) {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`${API_URL}/reservations/?restaurant_id=${restaurantId}`);
-      
-      if (!response.ok) {
-        throw new Error(`Erreur HTTP: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const { data } = await reservationService.getByRestaurantId(restaurantId);
       setReservations(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Une erreur est survenue');

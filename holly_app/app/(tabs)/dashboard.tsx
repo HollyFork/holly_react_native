@@ -8,97 +8,10 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { useRestaurants } from '@/contexts/RestaurantContext';
 import { useReservations } from '@/hooks/useReservations';
+import { useNotes } from '@/hooks/useNotes';
+import { useCommandes } from '@/hooks/useCommandes';
+import { useStocks } from '@/hooks/useStocks';
 import { router } from 'expo-router';
-
-// Données factices pour le tableau de bord
-const mockData = {
-  reservations: {
-    total: 28,
-    today: 12,
-    upcoming: 16,
-    detailsToday: [
-      { id: 1, client: 'Martin Dupont', heure: '12:30', personnes: 4, telephone: '0612345678', salle: 'Principale' },
-      { id: 2, client: 'Sophie Bernard', heure: '13:00', personnes: 2, telephone: '0698765432', salle: 'Terrasse' },
-      { id: 3, client: 'Jean Moreau', heure: '19:30', personnes: 6, telephone: '0687654321', salle: 'Principale' },
-      { id: 4, client: 'Emma Laurent', heure: '20:00', personnes: 3, telephone: '0654321987', salle: 'VIP' },
-    ]
-  },
-  commandes: {
-    total: 34,
-    enCours: 4,
-    validees: 27,
-    annulees: 3,
-    chiffreJour: 1250.80,
-    chiffreSemaine: 8750.25
-  },
-  stocks: {
-    alertes: 5,
-    ingredients: [
-      { id: 1, nom: 'Farine', quantite: 2.5, unite: 'kg', seuil: 5 },
-      { id: 2, nom: 'Huile d\'olive', quantite: 0.8, unite: 'L', seuil: 2 },
-      { id: 3, nom: 'Tomates', quantite: 1.2, unite: 'kg', seuil: 3 },
-      { id: 4, nom: 'Mozzarella', quantite: 0.5, unite: 'kg', seuil: 1 },
-      { id: 5, nom: 'Thon', quantite: 0.4, unite: 'kg', seuil: 1 },
-    ]
-  },
-  employes: {
-    total: 12,
-    presents: 8,
-    absents: 4,
-    typesRepartition: [
-      { type: 'Serveur', nombre: 5 },
-      { type: 'Cuisinier', nombre: 4 },
-      { type: 'Manager', nombre: 1 },
-      { type: 'Barman', nombre: 2 }
-    ]
-  },
-  notes: [
-    { id: 1, message: 'Vérifier l\'arrivage de vin pour demain', auteur: 'Marc (Manager)', date: '10:30' },
-    { id: 2, message: 'Prévoir plus de personnel pour samedi soir', auteur: 'Emma (Manager)', date: '11:45' },
-    { id: 3, message: 'Problème avec la chambre froide', auteur: 'Julie (Chef)', date: '14:20' }
-  ]
-};
-
-interface DashboardCardProps {
-  title: string;
-  value: string | number;
-  icon: string;
-  color?: string;
-  onPress?: () => void;
-}
-
-function DashboardCard({ title, value, icon, color, onPress }: DashboardCardProps) {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
-  const cardColor = color || colors.primary;
-
-  return (
-    <TouchableOpacity 
-      style={[
-        styles.card, 
-        colorScheme === 'dark' ? { backgroundColor: colors.background } : { backgroundColor: '#FFFFFF' },
-        { borderColor: `${cardColor}10` }
-      ]}
-      activeOpacity={0.7}
-      onPress={onPress}
-    >
-      <View style={[styles.cardIconCircle, { backgroundColor: cardColor }]}>
-        <CustomIcon name={icon as any} size={18} color="#fff" />
-      </View>
-      <View style={styles.cardContent}>
-        <ThemedText style={styles.cardTitle}>
-          {title}
-        </ThemedText>
-        <ThemedText style={[styles.cardValue, { color: cardColor }]} numberOfLines={1} ellipsizeMode="tail">
-          {value}
-        </ThemedText>
-      </View>
-      <View style={styles.cardArrow}>
-        <CustomIcon name="chevron-right" size={16} color={colors.icon} />
-      </View>
-    </TouchableOpacity>
-  );
-}
 
 interface DashboardCardV2Props {
   icon: string;
@@ -158,7 +71,28 @@ export default function DashboardScreen() {
     refreshReservations
   } = useReservations(selectedRestaurant?.id_restaurant || null);
 
-  if (restaurantsLoading || reservationsLoading) {
+  const {
+    notes,
+    loading: notesLoading,
+    error: notesError,
+    refreshNotes
+  } = useNotes(selectedRestaurant?.id_restaurant || null);
+
+  const {
+    commandes,
+    loading: commandesLoading,
+    error: commandesError,
+    refreshCommandes
+  } = useCommandes(selectedRestaurant?.id_restaurant || null);
+
+  const {
+    stocks,
+    loading: stocksLoading,
+    error: stocksError,
+    refreshStocks
+  } = useStocks(selectedRestaurant?.id_restaurant || null);
+
+  if (restaurantsLoading || reservationsLoading || notesLoading || commandesLoading || stocksLoading) {
     return (
       <ThemedView style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -167,18 +101,21 @@ export default function DashboardScreen() {
     );
   }
 
-  if (restaurantsError || reservationsError || !selectedRestaurant) {
+  if (restaurantsError || reservationsError || notesError || commandesError || stocksError || !selectedRestaurant) {
     return (
       <ThemedView style={[styles.container, styles.centered]}>
         <CustomIcon name="alert-circle" size={40} color={colors.error} />
         <ThemedText style={styles.errorText}>
-          {restaurantsError || reservationsError || "Aucun restaurant disponible"}
+          {restaurantsError || reservationsError || notesError || commandesError || stocksError || "Aucun restaurant disponible"}
         </ThemedText>
         <TouchableOpacity 
           style={styles.retryButton}
           onPress={() => {
             refreshRestaurants();
             refreshReservations();
+            refreshNotes();
+            refreshCommandes();
+            refreshStocks();
           }}
         >
           <ThemedText style={styles.retryText}>Réessayer</ThemedText>
@@ -188,6 +125,8 @@ export default function DashboardScreen() {
   }
 
   const futureReservations = getFutureReservations();
+  const commandesEnCours = commandes.filter(cmd => cmd.statut === 'EN_COURS').length;
+  const stocksEnAlerte = stocks.filter(stock => stock.quantite_en_stock <= stock.seuil_alerte).length;
 
   return (
     <ThemedView style={styles.container}>
@@ -207,6 +146,9 @@ export default function DashboardScreen() {
             onPress={() => {
               refreshRestaurants();
               refreshReservations();
+              refreshNotes();
+              refreshCommandes();
+              refreshStocks();
             }} 
             style={stylesV2.refreshButton}
           >
@@ -223,18 +165,26 @@ export default function DashboardScreen() {
         <DashboardCardV2
           icon="shopping_bag"
           title="Commandes"
-          value={"6"}
-          subtitle={"Commandes en cours : 1"}
+          value={commandes.length.toString()}
+          subtitle={`Commandes en cours : ${commandesEnCours}`}
+          onPress={() => router.push('/(tabs)/commandes')}
+        />
+        <DashboardCardV2
+          icon="fridge-alert-outline"
+          title="Stocks"
+          value={stocks.length.toString()}
+          subtitle={`${stocksEnAlerte} produits en alerte`}
+        />
+        <DashboardCardV2
+          icon="note-text"
+          title="Notes"
+          value={notes.length.toString()}
+          subtitle={notes.length === 1 ? 'note' : 'notes'}
         />
         <DashboardCardV2
           icon="schedule"
           title="Heures de pointe"
           value={"12h-14h, 19h-21h"}
-        />
-        <DashboardCardV2
-          icon="fridge-outline"
-          title="Stocks critiques"
-          value={""}
         />
       </ScrollView>
     </ThemedView>
