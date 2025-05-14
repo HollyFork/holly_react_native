@@ -135,16 +135,16 @@ export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
 
   // Liste des éléments de navigation incluant le bouton de déconnexion
   const navItems: NavItem[] = [
-    { id: '1', title: 'Tableau de bord', icon: 'dashboard', route: '/(tabs)/dashboard' },
-    { id: '2', title: 'Réservations', icon: 'event', route: '/(tabs)/reservations' },
-    { id: '3', title: 'Commandes', icon: 'shopping_bag', route: '/(tabs)/commandes' },
-    { id: '4', title: 'Statistiques', icon: 'assessment', route: '/(tabs)/stats' },
-    { id: '5', title: 'Paramètres', icon: 'settings', route: '/(tabs)/settings' },
-    { id: '6', title: 'Support', icon: 'help', route: '/(tabs)/support' },
+    { id: '1', title: 'Tableau de bord', icon: 'view-dashboard', route: '/(tabs)/dashboard' },
+    { id: '2', title: 'Réservations', icon: 'calendar-clock', route: '/(tabs)/reservations' },
+    { id: '3', title: 'Commandes', icon: 'cart', route: '/(tabs)/commandes' },
+    { id: '4', title: 'Statistiques', icon: 'chart-bar', route: '/(tabs)/stats' },
+    { id: '5', title: 'Paramètres', icon: 'cog', route: '/(tabs)/settings' },
+    { id: '6', title: 'Support', icon: 'help-circle', route: '/(tabs)/support' },
     // Séparateur
     { id: 'separator', title: '', icon: '' },
     // Bouton de déconnexion
-    { id: 'logout', title: 'Déconnexion', icon: 'exit-to-app', action: handleLogout, highlight: true },
+    { id: 'logout', title: 'Déconnexion', icon: 'logout', action: handleLogout, highlight: true },
   ];
   
   const renderNavItem = ({ item }: { item: NavItem }) => {

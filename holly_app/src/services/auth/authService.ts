@@ -7,12 +7,8 @@ interface LoginCredentials {
   password: string;
 }
 
-interface LoginResponse {
-  id_user: number;
-  username: string;
-  email: string;
-  first_name: string;
-  last_name: string;
+interface LoginResponse extends User {
+  id_user: number; // Garder l'ID original de l'API
 }
 
 // Clés de stockage
@@ -32,9 +28,14 @@ export const authService = {
    */
   login: async (credentials: LoginCredentials) => {
     const response = await apiClient.post<LoginResponse>('/auth/login/', credentials);
-    // Stocker les données temporairement en mémoire
+    // Stocker les données en mémoire et dans AsyncStorage
     if (response.data) {
-      currentUserData = response.data;
+      const userData = {
+        ...response.data,
+        id: response.data.id_user // Assurer la compatibilité avec l'interface User
+      };
+      currentUserData = userData;
+      await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
     }
     return response;
   },
@@ -60,32 +61,74 @@ export const authService = {
    * Vérifie si un utilisateur est connecté
    */
   isAuthenticated: async (): Promise<boolean> => {
-    // Vérifier si nous avons des données utilisateur en mémoire
-    return !!currentUserData;
+    try {
+      // Vérifier d'abord en mémoire
+      if (currentUserData) return true;
+      
+      // Si pas en mémoire, vérifier dans AsyncStorage
+      const storedUser = await AsyncStorage.getItem(USER_STORAGE_KEY);
+      if (storedUser) {
+        currentUserData = JSON.parse(storedUser);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Erreur lors de la vérification de l\'authentification:', error);
+      return false;
+    }
   },
 
   /**
    * Récupère l'utilisateur actuellement connecté
    */
   getCurrentUser: async (): Promise<User | null> => {
-    // Retourner les données utilisateur en mémoire
-    return currentUserData as User | null;
+    try {
+      // Vérifier d'abord en mémoire
+      if (currentUserData) return currentUserData as User;
+      
+      // Si pas en mémoire, récupérer depuis AsyncStorage
+      const storedUser = await AsyncStorage.getItem(USER_STORAGE_KEY);
+      if (storedUser) {
+        currentUserData = JSON.parse(storedUser);
+        return currentUserData as User;
+      }
+      return null;
+    } catch (error) {
+      console.error('Erreur lors de la récupération de l\'utilisateur:', error);
+      return null;
+    }
   },
 
   /**
    * Sauvegarde les informations de l'utilisateur et le token
    */
   setUserData: async (userData: LoginResponse, token: string): Promise<void> => {
-    // Stocker les données en mémoire
-    currentUserData = userData;
-    return Promise.resolve();
+    try {
+      const userDataWithId = {
+        ...userData,
+        id: userData.id_user // Assurer la compatibilité avec l'interface User
+      };
+      currentUserData = userDataWithId;
+      await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userDataWithId));
+      if (token) {
+        await AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde des données utilisateur:', error);
+      throw error;
+    }
   },
 
   /**
    * Récupère le token d'authentification
    */
   getAuthToken: async (): Promise<string | null> => {
-    // Retourner le token si l'utilisateur est connecté
-    return currentUserData ? 'session_active' : null;
+    try {
+      const token = await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
+      return token || (currentUserData ? 'session_active' : null);
+    } catch (error) {
+      console.error('Erreur lors de la récupération du token:', error);
+      return null;
+    }
   }
 }; 

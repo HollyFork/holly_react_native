@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, FlatList, RefreshControl, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, FlatList, RefreshControl, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useReservations } from '@/hooks/useReservations';
 import { Colors } from '@/constants/Colors';
 import { CustomIcon } from '@/components/CustomIcon';
@@ -97,6 +97,15 @@ export default function ReservationsScreen() {
     );
   }
 
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.text }]}>Chargement des données...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <HeaderWithSidebars restaurantName={selectedRestaurant.nom_restaurant} />
@@ -127,7 +136,12 @@ export default function ReservationsScreen() {
           ))}
         </ScrollView>
         <TouchableOpacity onPress={refreshReservations} style={styles.refreshBtn}>
-          <CustomIcon name="refresh" size={24} color={colors.primary} />
+          <CustomIcon 
+            name="refresh" 
+            size={24} 
+            color={colors.primary} 
+            style={loading ? { transform: [{ rotate: '360deg' }] } : undefined}
+          />
         </TouchableOpacity>
       </View>
       {/* Statistiques */}
@@ -150,7 +164,6 @@ export default function ReservationsScreen() {
         data={filtered}
         keyExtractor={item => String(item.id)}
         contentContainerStyle={{ padding: 10, paddingBottom: 30 }}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={refreshReservations} />}
         renderItem={({ item }: { item: Reservation }) => (
           <View style={[
             styles.reservationCard,
@@ -265,5 +278,13 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 13,
     marginLeft: 4,
+  },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
   },
 }); 

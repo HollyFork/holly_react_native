@@ -126,16 +126,16 @@ export default function CommandeDetailsScreen() {
           style={styles.navButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <CustomIcon name="refresh" size={24} color={colors.primary} />
+          <CustomIcon 
+            name="refresh" 
+            size={24} 
+            color={colors.primary} 
+            style={refreshing ? { transform: [{ rotate: '360deg' }] } : undefined}
+          />
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        style={styles.container}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
+      <ScrollView style={styles.container}>
         <View style={styles.content}>
           <View style={[styles.card, { backgroundColor: colors.background }]}>
             <View style={styles.header}>
