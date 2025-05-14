@@ -1,290 +1,479 @@
 import React, { useState, useMemo } from 'react';
-import { View, FlatList, RefreshControl, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
-import { useReservations } from '@/hooks/useReservations';
-import { Colors } from '@/constants/Colors';
-import { CustomIcon } from '@/components/CustomIcon';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { Reservation } from '@/src/models';
+import {
+  StyleSheet,
+  View,
+  TouchableOpacity,
+  FlatList,
+  TextInput,
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { ThemedText } from '@/components/ThemedText';
+import { ThemedView } from '@/components/ThemedView';
 import { HeaderWithSidebars } from '@/components/HeaderWithSidebars';
+import { CustomIcon } from '@/components/CustomIcon';
+import { StatsCards, StatItem } from '@/components/StatsCards';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { Colors } from '@/constants/Colors';
 import { useRestaurants } from '@/contexts/RestaurantContext';
+import { useReservations } from '@/hooks/useReservations';
+import { Reservation } from '@/src/models';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
-const FILTERS = [
-  { key: 'TOUTES', label: 'Toutes' },
-  { key: 'AUJOURDHUI', label: "Aujourd'hui" },
-  { key: 'A_VENIR', label: 'À venir' },
-  { key: 'PASSEES', label: 'Passées' },
-];
+type ReservationFilter = 'all' | 'today' | 'upcoming' | 'past';
 
-function filterReservations(reservations: Reservation[], filter: string): Reservation[] {
-  const now = new Date();
-  switch (filter) {
-    case 'AUJOURDHUI':
-      return reservations.filter((r: Reservation) => {
-        const d = new Date(r.date_heure);
-        return d.toDateString() === now.toDateString();
-      });
-    case 'A_VENIR':
-      return reservations.filter((r: Reservation) => new Date(r.date_heure) > now);
-    case 'PASSEES':
-      return reservations.filter((r: Reservation) => new Date(r.date_heure) < now);
-    default:
-      return reservations;
-  }
+function formatDate(date: string) {
+  return format(new Date(date), 'dd MMM yyyy HH:mm', { locale: fr });
+}
+
+interface ReservationCardProps {
+  reservation: Reservation;
+  onPress?: () => void;
+}
+
+function ReservationCard({ reservation, onPress }: ReservationCardProps) {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+  
+  const getStatusColor = () => {
+    const now = new Date();
+    const reservationDate = new Date(reservation.date_heure);
+    
+    if (reservationDate < now) return '#FF4B4B'; // Rouge pour passé
+    if (reservationDate.toDateString() === now.toDateString()) return '#4CAF50'; // Vert pour aujourd'hui
+    return '#3b82f6'; // Bleu pour à venir
+  };
+
+  const getStatusText = () => {
+    const now = new Date();
+    const reservationDate = new Date(reservation.date_heure);
+    
+    if (reservationDate < now) return 'Passée';
+    if (reservationDate.toDateString() === now.toDateString()) return "Aujourd'hui";
+    return 'À venir';
+  };
+
+  return (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={styles.cardHeader}>
+        <View style={styles.titleContainer}>
+          <ThemedText style={styles.title} numberOfLines={1}>
+            {reservation.nom_client}
+          </ThemedText>
+          <View style={styles.statusContainer}>
+            <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
+            <ThemedText style={styles.statusText}>{getStatusText()}</ThemedText>
+          </View>
+        </View>
+        <CustomIcon name="chevron-right" size={20} color={colors.primary} />
+      </View>
+
+      <View style={styles.cardContent}>
+        <View style={styles.infoRow}>
+          <ThemedText style={styles.label}>Date:</ThemedText>
+          <ThemedText style={styles.value}>{formatDate(reservation.date_heure)}</ThemedText>
+        </View>
+        <View style={styles.infoRow}>
+          <ThemedText style={styles.label}>Personnes:</ThemedText>
+          <ThemedText style={styles.value}>{reservation.nombre_personnes} personnes</ThemedText>
+        </View>
+        <View style={styles.infoRow}>
+          <ThemedText style={styles.label}>Téléphone:</ThemedText>
+          <ThemedText style={styles.value}>{reservation.telephone}</ThemedText>
+        </View>
+        <View style={styles.infoRow}>
+          <ThemedText style={styles.label}>Salle:</ThemedText>
+          <ThemedText style={styles.value}>{reservation.salle.nom_salle}</ThemedText>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
 }
 
 export default function ReservationsScreen() {
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<ReservationFilter>('all');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   const { selectedRestaurant } = useRestaurants();
-  const { reservations, loading, refreshReservations } = useReservations(selectedRestaurant?.id_restaurant || null);
-  const [filter, setFilter] = useState('TOUTES');
+  const {
+    reservations,
+    loading,
+    error,
+    refreshReservations,
+    getFutureReservations
+  } = useReservations(selectedRestaurant?.id_restaurant || null);
 
-  const filtered = useMemo(() => filterReservations(reservations, filter), [reservations, filter]);
-
-  // Statistiques
-  const total = reservations.length;
-  const today = filterReservations(reservations, 'AUJOURDHUI').length;
-  const upcoming = filterReservations(reservations, 'A_VENIR').length;
-
-  const getFilterStyle = (filterKey: string) => {
-    switch (filterKey) {
-      case 'AUJOURDHUI':
-        return { backgroundColor: '#fff7e6', borderColor: colors.primary };
-      case 'A_VENIR':
-        return { backgroundColor: '#e6f0ff', borderColor: '#3b82f6' };
-      case 'PASSEES':
-        return { backgroundColor: '#f5f5f5', borderColor: '#888' };
-      default:
-        return { backgroundColor: '#eee', borderColor: '#ccc' };
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await refreshReservations();
+    } catch (error) {
+      console.error('Erreur lors du rafraîchissement:', error);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
-  const getFilterTextStyle = (filterKey: string) => {
-    switch (filterKey) {
-      case 'AUJOURDHUI':
-        return { color: colors.primary };
-      case 'A_VENIR':
-        return { color: '#3b82f6' };
-      case 'PASSEES':
-        return { color: '#666' };
-      default:
-        return { color: colors.text };
-    }
-  };
-
-  const getReservationCardStyle = (date: string) => {
-    const reservationDate = new Date(date);
+  const filteredReservations = useMemo(() => {
     const now = new Date();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    return reservations.filter(reservation => {
+      const matchesSearch = reservation.nom_client.toLowerCase().includes(searchQuery.toLowerCase());
+      const reservationDate = new Date(reservation.date_heure);
+      
+      if (!matchesSearch) return false;
+      
+      switch (activeFilter) {
+        case 'today':
+          return reservationDate.toDateString() === now.toDateString();
+        case 'upcoming':
+          return reservationDate > now;
+        case 'past':
+          return reservationDate < now;
+        default:
+          return true;
+      }
+    });
+  }, [reservations, searchQuery, activeFilter]);
 
-    if (reservationDate.toDateString() === now.toDateString()) {
-      return { backgroundColor: '#fff7e6', borderLeftColor: colors.primary };
-    } else if (reservationDate > now) {
-      return { backgroundColor: '#e6f0ff', borderLeftColor: '#3b82f6' };
-    } else {
-      return { backgroundColor: '#f5f5f5', borderLeftColor: '#888' };
-    }
-  };
+  const stats = useMemo(() => {
+    const now = new Date();
+    const total = reservations.length;
+    const today = reservations.filter(r => 
+      new Date(r.date_heure).toDateString() === now.toDateString()
+    ).length;
+    const upcoming = reservations.filter(r => 
+      new Date(r.date_heure) > now
+    ).length;
+    const past = reservations.filter(r => 
+      new Date(r.date_heure) < now
+    ).length;
 
-  if (!selectedRestaurant) {
+    const statsItems: StatItem[] = [
+      { value: total, label: 'Total' },
+      { value: today, label: 'Aujourd\'hui' },
+      { value: upcoming, label: 'À venir' },
+      { value: past, label: 'Passées' }
+    ];
+
+    return statsItems;
+  }, [reservations]);
+
+  if (loading && !isRefreshing) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ color: colors.text }}>Aucun restaurant sélectionné</Text>
-      </View>
+      <ThemedView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <ThemedText style={styles.loadingText}>Chargement des réservations...</ThemedText>
+      </ThemedView>
     );
   }
 
-  if (loading) {
+  if (error || !selectedRestaurant) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.text }]}>Chargement des données...</Text>
-      </View>
+      <ThemedView style={styles.errorContainer}>
+        <CustomIcon name="alert-circle" size={48} color={colors.error} />
+        <ThemedText style={styles.errorText}>
+          {error || "Aucun restaurant sélectionné"}
+        </ThemedText>
+        <TouchableOpacity 
+          style={styles.retryButton}
+          onPress={handleRefresh}
+        >
+          <ThemedText style={styles.retryButtonText}>Réessayer</ThemedText>
+        </TouchableOpacity>
+      </ThemedView>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <ThemedView style={styles.container}>
       <HeaderWithSidebars restaurantName={selectedRestaurant.nom_restaurant} />
-      <View style={styles.tabsContainer}>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabsScrollContent}
+      
+      <View style={styles.headerContainer}>
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <CustomIcon name="view-dashboard" size={20} color={colors.text + '80'} style={styles.searchIcon} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.text }]}
+              placeholder="Rechercher une réservation..."
+              placeholderTextColor={colors.text + '80'}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSearchQuery('')}
+                style={styles.clearButton}
+              >
+                <CustomIcon name="close" size={20} color={colors.text + '80'} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+        <TouchableOpacity 
+          onPress={handleRefresh}
+          style={styles.refreshButton}
+          disabled={isRefreshing}
         >
-          {FILTERS.map(tab => (
-            <TouchableOpacity
-              key={tab.key}
-              onPress={() => setFilter(tab.key)}
-              style={[
-                styles.tab,
-                getFilterStyle(tab.key),
-                filter === tab.key && { borderWidth: 2 }
-              ]}
-            >
-              <Text style={[
-                styles.tabText,
-                getFilterTextStyle(tab.key),
-                filter === tab.key && { fontWeight: 'bold' }
-              ]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-        <TouchableOpacity onPress={refreshReservations} style={styles.refreshBtn}>
           <CustomIcon 
             name="refresh" 
             size={24} 
-            color={colors.primary} 
-            style={loading ? { transform: [{ rotate: '360deg' }] } : undefined}
+            color={isRefreshing ? colors.text + '80' : colors.primary} 
+            style={isRefreshing ? { transform: [{ rotate: '360deg' }] } : undefined}
           />
         </TouchableOpacity>
       </View>
-      {/* Statistiques */}
-      <View style={styles.statsRow}>
-        <View style={[styles.statBox, { backgroundColor: '#f0f1f2' }]}> 
-          <Text style={styles.statValue}>{total}</Text>
-          <Text style={[styles.statLabel, { fontWeight: '800' }]}>Total</Text>
-        </View>
-        <View style={[styles.statBox, { backgroundColor: '#fff7e6' }]}> 
-          <Text style={[styles.statValue, { color: colors.primary }]}>{today}</Text>
-          <Text style={[styles.statLabel, { color: colors.primary }]}>Aujourd'hui</Text>
-        </View>
-        <View style={[styles.statBox, { backgroundColor: '#e6f0ff' }]}> 
-          <Text style={[styles.statValue, { color: '#3b82f6' }]}>{upcoming}</Text>
-          <Text style={[styles.statLabel, { color: '#3b82f6' }]}>À venir</Text>
-        </View>
+
+      <StatsCards stats={stats} />
+
+      <View style={styles.filterContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <TouchableOpacity
+            style={[styles.filterButton, activeFilter === 'all' && styles.filterButtonActive]}
+            onPress={() => setActiveFilter('all')}
+          >
+            <ThemedText style={[styles.filterButtonText, activeFilter === 'all' && styles.filterButtonTextActive]}>
+              Toutes
+            </ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterButton, activeFilter === 'today' && styles.filterButtonActive]}
+            onPress={() => setActiveFilter('today')}
+          >
+            <ThemedText style={[styles.filterButtonText, activeFilter === 'today' && styles.filterButtonTextActive]}>
+              Aujourd'hui
+            </ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterButton, activeFilter === 'upcoming' && styles.filterButtonActive]}
+            onPress={() => setActiveFilter('upcoming')}
+          >
+            <ThemedText style={[styles.filterButtonText, activeFilter === 'upcoming' && styles.filterButtonTextActive]}>
+              À venir
+            </ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterButton, activeFilter === 'past' && styles.filterButtonActive]}
+            onPress={() => setActiveFilter('past')}
+          >
+            <ThemedText style={[styles.filterButtonText, activeFilter === 'past' && styles.filterButtonTextActive]}>
+              Passées
+            </ThemedText>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
-      {/* Liste des réservations */}
+
       <FlatList
-        data={filtered}
-        keyExtractor={item => String(item.id)}
-        contentContainerStyle={{ padding: 10, paddingBottom: 30 }}
-        renderItem={({ item }: { item: Reservation }) => (
-          <View style={[
-            styles.reservationCard,
-            getReservationCardStyle(item.date_heure)
-          ]}>
-            <CustomIcon name="calendar-clock" size={32} color={colors.icon} style={{ marginRight: 12 }} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.reservationName}>{item.nom_client}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-                <CustomIcon name="clock-time-four" size={16} color={colors.icon} />
-                <Text style={styles.reservationDate}>{new Date(item.date_heure).toLocaleDateString()} {new Date(item.date_heure).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
-                <CustomIcon name="account-group" size={16} color={colors.icon} style={{ marginLeft: 10 }} />
-                <Text style={styles.reservationPeople}>{item.nombre_personnes} pers.</Text>
-              </View>
-            </View>
-            <CustomIcon name="chevron-right" size={24} color={colors.icon} />
-          </View>
+        data={filteredReservations}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <ReservationCard
+            reservation={item}
+            onPress={() => {
+              // TODO: Implémenter la navigation vers les détails de la réservation
+              // Une fois que la page de détails sera créée
+              console.log('Navigation vers les détails de la réservation:', item.id);
+            }}
+          />
         )}
-        ListEmptyComponent={<Text style={{ textAlign: 'center', color: colors.icon, marginTop: 40 }}>Aucune réservation</Text>}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <CustomIcon name="calendar-clock" size={48} color={colors.text + '40'} />
+            <ThemedText style={styles.emptyText}>
+              {searchQuery
+                ? "Aucune réservation ne correspond à votre recherche"
+                : "Aucune réservation disponible"}
+            </ThemedText>
+          </View>
+        }
       />
-    </View>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
-  tabsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    gap: 8,
-  },
-  tabsScrollContent: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingRight: 8,
-  },
-  tab: {
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    minWidth: 100,
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  tabText: {
-    fontSize: 14,
-  },
-  refreshBtn: {
-    marginLeft: 'auto',
-    padding: 6,
-    borderRadius: 20,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginHorizontal: 12,
-    marginBottom: 12,
-    gap: 8,
-  },
-  statBox: {
+  loadingContainer: {
     flex: 1,
-    alignItems: 'center',
-    borderRadius: 12,
-    padding: 6,
-    marginHorizontal: 1,
-    gap: 1,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 1,
-    elevation: 1,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: '#888',
-    fontWeight: '600',
-  },
-  statValue: {
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  reservationCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 12,
-    marginVertical: 6,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
-    borderLeftWidth: 4,
-  },
-  reservationName: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    color: '#222',
-  },
-  reservationDate: {
-    color: '#888',
-    fontSize: 13,
-    marginLeft: 4,
-  },
-  reservationPeople: {
-    color: '#888',
-    fontSize: 13,
-    marginLeft: 4,
-  },
-  centered: {
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    marginTop: 10,
+    textAlign: 'center',
+    fontSize: 16,
+  },
+  retryButton: {
+    marginTop: 20,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: '#F27E42',
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  searchContainer: {
+    flex: 1,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(142, 142, 147, 0.12)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 40,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+    fontSize: 16,
+  },
+  clearButton: {
+    padding: 8,
+  },
+  refreshButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
+    backgroundColor: 'rgba(142, 142, 147, 0.12)',
+  },
+  filterContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  filterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(142, 142, 147, 0.12)',
+    marginRight: 8,
+  },
+  filterButtonActive: {
+    backgroundColor: '#F27E42',
+  },
+  filterButtonText: {
+    fontSize: 14,
+    opacity: 0.8,
+  },
+  filterButtonTextActive: {
+    color: 'white',
+    opacity: 1,
+    fontWeight: '600',
+  },
+  listContent: {
+    padding: 16,
+  },
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(142, 142, 147, 0.12)',
+  },
+  titleContainer: {
+    flex: 1,
+    marginRight: 8,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  statusText: {
+    fontSize: 12,
+    opacity: 0.8,
+  },
+  cardContent: {
+    padding: 16,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  label: {
+    fontSize: 14,
+    opacity: 0.6,
+  },
+  value: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+  },
+  emptyText: {
+    marginTop: 12,
+    fontSize: 16,
+    opacity: 0.6,
+    textAlign: 'center',
   },
 }); 

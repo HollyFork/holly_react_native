@@ -62,10 +62,12 @@ export function HeaderWithSidebars({ restaurantName }: HeaderWithSidebarsProps) 
   
   const handleRestaurantSelect = async (sidebarRestaurant: { id: string; name: string }) => {
     const restaurant = restaurants.find(r => r.id_restaurant.toString() === sidebarRestaurant.id);
-    if (restaurant) {
+    if (restaurant && restaurant.id_restaurant !== selectedRestaurant?.id_restaurant) {
       setSelectedRestaurant(restaurant);
-      // Rafraîchir les données après le changement de restaurant
-      await refreshRestaurants();
+      // Ne rafraîchir que si nécessaire
+      if (restaurants.length === 0) {
+        await refreshRestaurants();
+      }
     }
     setIsSidebarOpen(false);
   };

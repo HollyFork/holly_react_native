@@ -1,5 +1,5 @@
-import React from 'react';
-import { StyleSheet, View, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, View, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { HeaderWithSidebars } from '@/components/HeaderWithSidebars';
@@ -56,6 +56,7 @@ function DashboardCardV2({ icon, title, value, subtitle, onPress }: DashboardCar
 export default function DashboardScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const { 
     selectedRestaurant,
@@ -91,6 +92,25 @@ export default function DashboardScreen() {
     error: stocksError,
     refreshStocks
   } = useStocks(selectedRestaurant?.id_restaurant || null);
+
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        refreshRestaurants(),
+        refreshReservations(),
+        refreshNotes(),
+        refreshCommandes(),
+        refreshStocks()
+      ]);
+    } catch (error) {
+      console.error('Erreur lors du rafraîchissement:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   if (restaurantsLoading || reservationsLoading || notesLoading || commandesLoading || stocksLoading) {
     return (
@@ -137,22 +157,29 @@ export default function DashboardScreen() {
         style={stylesV2.content}
         contentContainerStyle={stylesV2.contentContainer}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
       >
         <View style={stylesV2.titleContainer}>
           <ThemedText type="title" style={stylesV2.mainTitle}>
             Tableau de bord
           </ThemedText>
           <TouchableOpacity 
-            onPress={() => {
-              refreshRestaurants();
-              refreshReservations();
-              refreshNotes();
-              refreshCommandes();
-              refreshStocks();
-            }} 
+            onPress={handleRefresh}
             style={stylesV2.refreshButton}
+            disabled={isRefreshing}
           >
-            <CustomIcon name="refresh" size={24} color={colors.primary} />
+            <CustomIcon 
+              name="refresh" 
+              size={24} 
+              color={isRefreshing ? colors.text + '80' : colors.primary} 
+            />
           </TouchableOpacity>
         </View>
         <DashboardCardV2
@@ -174,6 +201,7 @@ export default function DashboardScreen() {
           title="Stocks"
           value={stocks.length.toString()}
           subtitle={`${stocksEnAlerte} produits en alerte`}
+          onPress={() => router.push('/(tabs)/stocks')}
         />
         <DashboardCardV2
           icon="note-text"

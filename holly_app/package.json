@@ -8,6 +8,7 @@
     "setup-env": "node ./scripts/setup-env.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "ios-dev": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint"
   },
@@ -49,6 +50,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@react-native-community/cli": "^18.0.0",
     "@types/react": "~19.0.10",
     "babel-plugin-module-resolver": "^5.0.2",
     "eslint": "^9.25.0",

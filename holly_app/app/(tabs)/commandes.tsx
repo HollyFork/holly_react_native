@@ -1,306 +1,447 @@
 import React, { useState, useMemo } from 'react';
-import { View, FlatList, RefreshControl, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, FlatList, TextInput, ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useCommandes } from '@/hooks/useCommandes';
-import { Colors } from '@/constants/Colors';
+import { useRestaurants } from '@/contexts/RestaurantContext';
+import { Commande } from '@/src/models';
+import { ThemedView } from '@/components/ThemedView';
+import { ThemedText } from '@/components/ThemedText';
 import { CustomIcon } from '@/components/CustomIcon';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Commande } from '@/src/models';
-import { HeaderWithSidebars } from '@/components/HeaderWithSidebars';
-import { useRestaurants } from '@/contexts/RestaurantContext';
+import { Colors } from '@/constants/Colors';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { router } from 'expo-router';
+import { HeaderWithSidebars } from '@/components/HeaderWithSidebars';
+import { StatsCards, StatItem } from '@/components/StatsCards';
 
-const FILTERS = [
-  { key: 'TOUS', label: 'Toutes' },
-  { key: 'EN_COURS', label: 'En cours' },
-  { key: 'VALIDEE', label: 'Validées' },
-  { key: 'ANNULEE', label: 'Annulées' },
-];
+type CommandeFilter = 'all' | 'EN_COURS' | 'VALIDEE' | 'ANNULEE';
 
-function filterCommandes(commandes: Commande[], filter: string): Commande[] {
-  if (filter === 'TOUS') return commandes;
-  return commandes.filter(cmd => cmd.statut === filter);
+function formatDate(date: string) {
+  return format(new Date(date), 'dd MMM yyyy HH:mm', { locale: fr });
+}
+
+interface CommandeCardProps {
+  commande: Commande;
+  onPress: () => void;
+}
+
+function CommandeCard({ commande, onPress }: CommandeCardProps) {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+  
+  const getStatusColor = () => {
+    switch (commande.statut) {
+      case 'EN_COURS': return '#FFA500'; // Orange
+      case 'VALIDEE': return '#4CAF50'; // Vert
+      case 'ANNULEE': return '#FF4B4B'; // Rouge
+      default: return colors.primary;
+    }
+  };
+
+  const getStatusText = () => {
+    switch (commande.statut) {
+      case 'EN_COURS': return 'En cours';
+      case 'VALIDEE': return 'Validée';
+      case 'ANNULEE': return 'Annulée';
+      default: return commande.statut;
+    }
+  };
+
+  return (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={styles.cardHeader}>
+        <View style={styles.titleContainer}>
+          <ThemedText style={styles.title}>
+            Commande #{commande.id}
+          </ThemedText>
+          <View style={styles.statusContainer}>
+            <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
+            <ThemedText style={styles.statusText}>{getStatusText()}</ThemedText>
+          </View>
+        </View>
+        <CustomIcon name="chevron-right" size={20} color={colors.primary} />
+      </View>
+
+      <View style={styles.cardContent}>
+        <View style={styles.infoRow}>
+          <ThemedText style={styles.label}>Date:</ThemedText>
+          <ThemedText style={styles.value}>{formatDate(commande.created_at)}</ThemedText>
+        </View>
+        <View style={styles.infoRow}>
+          <ThemedText style={styles.label}>Montant:</ThemedText>
+          <ThemedText style={styles.value}>
+            {Number(commande.montant || 0).toFixed(2)} €
+          </ThemedText>
+        </View>
+        <View style={styles.infoRow}>
+          <ThemedText style={styles.label}>Articles:</ThemedText>
+          <ThemedText style={styles.value}>
+            {Number(commande.nb_articles || 0)} articles
+          </ThemedText>
+        </View>
+        {commande.table && (
+          <View style={styles.infoRow}>
+            <ThemedText style={styles.label}>Table:</ThemedText>
+            <ThemedText style={styles.value}>Table {commande.table.numero}</ThemedText>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
 }
 
 export default function CommandesScreen() {
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const { selectedRestaurant } = useRestaurants();
-  const { commandes, loading, refreshCommandes } = useCommandes(selectedRestaurant?.id_restaurant || null);
-  const [filter, setFilter] = useState('TOUS');
+  const { commandes, loading: isLoading, error, refreshCommandes } = useCommandes(selectedRestaurant?.id_restaurant || null);
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<CommandeFilter>('all');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const filtered = useMemo(() => filterCommandes(commandes, filter), [commandes, filter]);
-
-  // Statistiques
-  const total = commandes.length;
-  const enCours = commandes.filter(cmd => cmd.statut === 'EN_COURS').length;
-  const validees = commandes.filter(cmd => cmd.statut === 'VALIDEE').length;
-
-  const getFilterStyle = (filterKey: string) => {
-    switch (filterKey) {
-      case 'EN_COURS':
-        return { backgroundColor: '#fff7e6', borderColor: colors.primary };
-      case 'VALIDEE':
-        return { backgroundColor: '#e6f0ff', borderColor: '#3b82f6' };
-      case 'ANNULEE':
-        return { backgroundColor: '#f5f5f5', borderColor: '#888' };
-      default:
-        return { backgroundColor: '#eee', borderColor: '#ccc' };
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await refreshCommandes();
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
-  const getFilterTextStyle = (filterKey: string) => {
-    switch (filterKey) {
-      case 'EN_COURS':
-        return { color: colors.primary };
-      case 'VALIDEE':
-        return { color: '#3b82f6' };
-      case 'ANNULEE':
-        return { color: '#666' };
-      default:
-        return { color: colors.text };
-    }
-  };
-
-  const getCommandeCardStyle = (statut: Commande['statut']) => {
-    switch (statut) {
-      case 'EN_COURS':
-        return { backgroundColor: '#fff7e6', borderLeftColor: colors.primary };
-      case 'VALIDEE':
-        return { backgroundColor: '#e6f0ff', borderLeftColor: '#3b82f6' };
-      case 'ANNULEE':
-        return { backgroundColor: '#f5f5f5', borderLeftColor: '#888' };
-      default:
-        return { backgroundColor: '#fff', borderLeftColor: '#ccc' };
-    }
-  };
-
-  const handleCommandePress = (commandeId: number) => {
-    router.push({
-      pathname: "/commande/[commandeId]",
-      params: { commandeId }
+  const filteredCommandes = useMemo(() => {
+    return commandes.filter(commande => {
+      const matchesSearch = 
+        commande.id.toString().includes(searchQuery) ||
+        (commande.table && commande.table.numero.toString().includes(searchQuery));
+      
+      if (!matchesSearch) return false;
+      
+      if (activeFilter === 'all') return true;
+      return commande.statut === activeFilter;
     });
-  };
+  }, [commandes, searchQuery, activeFilter]);
 
-  if (!selectedRestaurant) {
+  const stats = useMemo(() => {
+    const total = commandes.length;
+    const enCours = commandes.filter((c: Commande) => c.statut === 'EN_COURS').length;
+    const validees = commandes.filter((c: Commande) => c.statut === 'VALIDEE').length;
+    const annulees = commandes.filter((c: Commande) => c.statut === 'ANNULEE').length;
+
+    const statsItems: StatItem[] = [
+      { value: total, label: 'Total' },
+      { value: enCours, label: 'En cours' },
+      { value: validees, label: 'Validées' },
+      { value: annulees, label: 'Annulées' }
+    ];
+
+    return statsItems;
+  }, [commandes]);
+
+  if (isLoading && !isRefreshing) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ color: colors.text }}>Aucun restaurant sélectionné</Text>
-      </View>
+      <ThemedView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </ThemedView>
     );
   }
 
-  if (loading) {
+  if (error) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.text }]}>Chargement des données...</Text>
-      </View>
+      <ThemedView style={styles.errorContainer}>
+        <CustomIcon name="alert-circle" size={48} color={colors.error} />
+        <ThemedText style={styles.errorText}>
+          Une erreur est survenue lors du chargement des commandes
+        </ThemedText>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={handleRefresh}
+        >
+          <ThemedText style={styles.retryButtonText}>Réessayer</ThemedText>
+        </TouchableOpacity>
+      </ThemedView>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <HeaderWithSidebars restaurantName={selectedRestaurant.nom_restaurant} />
-      <View style={styles.tabsContainer}>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabsScrollContent}
+    <ThemedView style={styles.container}>
+      <HeaderWithSidebars restaurantName={selectedRestaurant?.nom_restaurant || ''} />
+      
+      <View style={styles.headerContainer}>
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <CustomIcon name="view-dashboard" size={20} color={colors.text + '80'} style={styles.searchIcon} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.text }]}
+              placeholder="Rechercher une commande..."
+              placeholderTextColor={colors.text + '80'}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSearchQuery('')}
+                style={styles.clearButton}
+              >
+                <CustomIcon name="close" size={20} color={colors.text + '80'} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+        <TouchableOpacity 
+          onPress={handleRefresh}
+          style={styles.refreshButton}
+          disabled={isRefreshing}
         >
-          {FILTERS.map(tab => (
-            <TouchableOpacity
-              key={tab.key}
-              onPress={() => setFilter(tab.key)}
-              style={[
-                styles.tab,
-                getFilterStyle(tab.key),
-                filter === tab.key && { borderWidth: 2 }
-              ]}
-            >
-              <Text style={[
-                styles.tabText,
-                getFilterTextStyle(tab.key),
-                filter === tab.key && { fontWeight: 'bold' }
-              ]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-        <TouchableOpacity onPress={refreshCommandes} style={styles.refreshBtn}>
           <CustomIcon 
             name="refresh" 
             size={24} 
-            color={colors.primary} 
-            style={loading ? { transform: [{ rotate: '360deg' }] } : undefined}
+            color={isRefreshing ? colors.text + '80' : colors.primary} 
+            style={isRefreshing ? { transform: [{ rotate: '360deg' }] } : undefined}
           />
         </TouchableOpacity>
       </View>
-      {/* Statistiques */}
-      <View style={styles.statsRow}>
-        <View style={[styles.statBox, { backgroundColor: '#f0f1f2' }]}> 
-          <Text style={styles.statValue}>{total}</Text>
-          <Text style={[styles.statLabel, { fontWeight: '800' }]}>Total</Text>
-        </View>
-        <View style={[styles.statBox, { backgroundColor: '#fff7e6' }]}> 
-          <Text style={[styles.statValue, { color: colors.primary }]}>{enCours}</Text>
-          <Text style={[styles.statLabel, { color: colors.primary }]}>En cours</Text>
-        </View>
-        <View style={[styles.statBox, { backgroundColor: '#e6f0ff' }]}> 
-          <Text style={[styles.statValue, { color: '#3b82f6' }]}>{validees}</Text>
-          <Text style={[styles.statLabel, { color: '#3b82f6' }]}>Validées</Text>
-        </View>
+
+      <StatsCards stats={stats} />
+
+      <View style={styles.filterContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <TouchableOpacity
+            style={[styles.filterButton, activeFilter === 'all' && styles.filterButtonActive]}
+            onPress={() => setActiveFilter('all')}
+          >
+            <ThemedText style={[styles.filterButtonText, activeFilter === 'all' && styles.filterButtonTextActive]}>
+              Toutes
+            </ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterButton, activeFilter === 'EN_COURS' && styles.filterButtonActive]}
+            onPress={() => setActiveFilter('EN_COURS')}
+          >
+            <ThemedText style={[styles.filterButtonText, activeFilter === 'EN_COURS' && styles.filterButtonTextActive]}>
+              En cours
+            </ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterButton, activeFilter === 'VALIDEE' && styles.filterButtonActive]}
+            onPress={() => setActiveFilter('VALIDEE')}
+          >
+            <ThemedText style={[styles.filterButtonText, activeFilter === 'VALIDEE' && styles.filterButtonTextActive]}>
+              Validées
+            </ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterButton, activeFilter === 'ANNULEE' && styles.filterButtonActive]}
+            onPress={() => setActiveFilter('ANNULEE')}
+          >
+            <ThemedText style={[styles.filterButtonText, activeFilter === 'ANNULEE' && styles.filterButtonTextActive]}>
+              Annulées
+            </ThemedText>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
-      {/* Liste des commandes */}
+
       <FlatList
-        data={filtered}
-        keyExtractor={item => String(item.id)}
-        contentContainerStyle={{ padding: 10, paddingBottom: 30 }}
-        renderItem={({ item }: { item: Commande }) => {
-          const date = new Date(item.created_at);
-          const formattedDate = format(date, 'dd MMM yyyy HH:mm', { locale: fr });
-          
-          return (
-            <TouchableOpacity 
-              style={[
-                styles.commandeCard,
-                getCommandeCardStyle(item.statut)
-              ]}
-              onPress={() => handleCommandePress(item.id)}
-            >
-              <CustomIcon name="cart" size={32} color={colors.icon} style={{ marginRight: 12 }} />
-              <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={styles.commandeId}>Commande #{item.id}</Text>
-                  <CustomIcon name="chevron-right" size={24} color={colors.icon} />
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-                  <CustomIcon name="clock-time-four" size={16} color={colors.icon} />
-                  <Text style={styles.commandeDate}>{formattedDate}</Text>
-                  <CustomIcon name="currency-eur" size={16} color={colors.icon} style={{ marginLeft: 10 }} />
-                  <Text style={styles.commandeMontant}>{Number(item.montant).toFixed(2)} €</Text>
-                  {item.table && (
-                    <>
-                      <CustomIcon name="silverware-fork-knife" size={16} color={colors.icon} style={{ marginLeft: 10 }} />
-                      <Text style={styles.commandeTable}>Table {item.table.numero}</Text>
-                    </>
-                  )}
-                </View>
-              </View>
-            </TouchableOpacity>
-          );
-        }}
-        ListEmptyComponent={<Text style={{ textAlign: 'center', color: colors.icon, marginTop: 40 }}>Aucune commande</Text>}
+        data={filteredCommandes}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <CommandeCard
+            commande={item}
+            onPress={() => router.push(`/commande/${item.id}`)}
+          />
+        )}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <CustomIcon name="silverware-fork-knife" size={48} color={colors.text} />
+            <ThemedText style={styles.emptyText}>
+              Aucune commande trouvée
+            </ThemedText>
+          </View>
+        }
       />
-    </View>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
-  tabsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    gap: 8,
-  },
-  tabsScrollContent: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingRight: 8,
-  },
-  tab: {
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    minWidth: 100,
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  tabText: {
-    fontSize: 14,
-  },
-  refreshBtn: {
-    marginLeft: 'auto',
-    padding: 6,
-    borderRadius: 20,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginHorizontal: 12,
-    marginBottom: 12,
-    gap: 8,
-  },
-  statBox: {
+  loadingContainer: {
     flex: 1,
-    alignItems: 'center',
-    borderRadius: 12,
-    padding: 6,
-    marginHorizontal: 1,
-    gap: 1,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 1,
-    elevation: 1,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: '#888',
-    fontWeight: '600',
-  },
-  statValue: {
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  commandeCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 12,
-    marginVertical: 6,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
-    borderLeftWidth: 4,
-    backgroundColor: '#fff',
-  },
-  commandeId: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    color: '#222',
-  },
-  commandeDate: {
-    color: '#888',
-    fontSize: 13,
-    marginLeft: 4,
-  },
-  commandeMontant: {
-    color: '#888',
-    fontSize: 13,
-    marginLeft: 4,
-  },
-  commandeTable: {
-    color: '#888',
-    fontSize: 13,
-    marginLeft: 4,
-  },
-  centered: {
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    marginTop: 10,
+    textAlign: 'center',
+    fontSize: 16,
+  },
+  retryButton: {
+    marginTop: 20,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: '#3b82f6',
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  searchContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(142, 142, 147, 0.12)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 40,
+  },
+  searchInputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+    fontSize: 16,
+    color: '#000',
+  },
+  clearButton: {
+    padding: 8,
+  },
+  refreshButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
+    backgroundColor: 'rgba(142, 142, 147, 0.12)',
+  },
+  filterContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  filterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(142, 142, 147, 0.12)',
+    marginRight: 8,
+  },
+  filterButtonActive: {
+    backgroundColor: '#F27E42',
+  },
+  filterButtonText: {
+    fontSize: 14,
+    opacity: 0.8,
+  },
+  filterButtonTextActive: {
+    color: 'white',
+    opacity: 1,
+    fontWeight: '600',
+  },
+  listContent: {
+    padding: 16,
+  },
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(142, 142, 147, 0.12)',
+  },
+  titleContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statusText: {
+    fontSize: 12,
+    opacity: 0.8,
+  },
+  cardContent: {
+    padding: 16,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  label: {
+    fontSize: 14,
+    opacity: 0.6,
+  },
+  value: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+  },
+  emptyText: {
     marginTop: 12,
     fontSize: 16,
+    opacity: 0.6,
+    textAlign: 'center',
   },
 }); 

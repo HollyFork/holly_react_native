@@ -101,20 +101,23 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
 
   // Effet pour recharger les restaurants quand l'authentification change
   useEffect(() => {
+    let isMounted = true;
+
     const checkAuthAndReload = async () => {
+      if (!isMounted) return;
+      
       const isAuthenticated = await authService.isAuthenticated();
-      if (isAuthenticated) {
-        console.log('Authentification détectée, rechargement des restaurants');
+      if (isAuthenticated && !restaurants.length) {
+        console.log('Authentification détectée, chargement initial des restaurants');
         await loadRestaurants();
       }
     };
 
-    // Vérifier l'authentification toutes les 2 secondes pendant les 10 premières secondes après le montage
-    const interval = setInterval(checkAuthAndReload, 2000);
-    const timeout = setTimeout(() => clearInterval(interval), 10000);
+    // Vérifier l'authentification une seule fois après le montage
+    const timeout = setTimeout(checkAuthAndReload, 1000);
 
     return () => {
-      clearInterval(interval);
+      isMounted = false;
       clearTimeout(timeout);
     };
   }, []);

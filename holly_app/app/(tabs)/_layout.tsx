@@ -39,6 +39,12 @@ export default function AppLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen 
+        name="stocks"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
