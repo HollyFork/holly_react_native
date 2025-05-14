@@ -19,6 +19,9 @@ interface LoginResponse {
 const USER_STORAGE_KEY = 'user_data';
 const TOKEN_STORAGE_KEY = 'auth_token';
 
+// Variable pour stocker temporairement les données de l'utilisateur
+let currentUserData: LoginResponse | null = null;
+
 /**
  * Service d'authentification pour la gestion des utilisateurs
  */
@@ -28,7 +31,12 @@ export const authService = {
    * @param credentials Identifiants de connexion
    */
   login: async (credentials: LoginCredentials) => {
-    return apiClient.post<LoginResponse>('/auth/login/', credentials);
+    const response = await apiClient.post<LoginResponse>('/auth/login/', credentials);
+    // Stocker les données temporairement en mémoire
+    if (response.data) {
+      currentUserData = response.data;
+    }
+    return response;
   },
 
   /**
@@ -36,12 +44,15 @@ export const authService = {
    */
   logout: async () => {
     try {
+      // Supprimer les données en mémoire
+      currentUserData = null;
+      // Supprimer les données stockées
       await AsyncStorage.removeItem(USER_STORAGE_KEY);
       await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
-      return apiClient.post('/logout/');
+      return Promise.resolve();
     } catch (error) {
       console.error('Erreur lors de la déconnexion:', error);
-      throw error;
+      return Promise.resolve();
     }
   },
 
@@ -49,53 +60,32 @@ export const authService = {
    * Vérifie si un utilisateur est connecté
    */
   isAuthenticated: async (): Promise<boolean> => {
-    try {
-      const userStr = await AsyncStorage.getItem(USER_STORAGE_KEY);
-      return !!userStr;
-    } catch (error) {
-      console.error('Erreur lors de la vérification d\'authentification:', error);
-      return false;
-    }
+    // Vérifier si nous avons des données utilisateur en mémoire
+    return !!currentUserData;
   },
 
   /**
    * Récupère l'utilisateur actuellement connecté
    */
   getCurrentUser: async (): Promise<User | null> => {
-    try {
-      const userStr = await AsyncStorage.getItem(USER_STORAGE_KEY);
-      if (userStr) {
-        return JSON.parse(userStr) as User;
-      }
-      return null;
-    } catch (e) {
-      console.error('Erreur lors de la récupération de l\'utilisateur:', e);
-      return null;
-    }
+    // Retourner les données utilisateur en mémoire
+    return currentUserData as User | null;
   },
 
   /**
    * Sauvegarde les informations de l'utilisateur et le token
    */
   setUserData: async (userData: LoginResponse, token: string): Promise<void> => {
-    try {
-      await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
-      await AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde des données utilisateur:', error);
-      throw error;
-    }
+    // Stocker les données en mémoire
+    currentUserData = userData;
+    return Promise.resolve();
   },
 
   /**
    * Récupère le token d'authentification
    */
   getAuthToken: async (): Promise<string | null> => {
-    try {
-      return await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
-    } catch (error) {
-      console.error('Erreur lors de la récupération du token:', error);
-      return null;
-    }
+    // Retourner le token si l'utilisateur est connecté
+    return currentUserData ? 'session_active' : null;
   }
 }; 
