@@ -1,26 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TouchableOpacity, ScrollView, ActivityIndicator, Dimensions } from 'react-native';
+import React from 'react';
+import { StyleSheet, View, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { Header } from '@/components/Header';
-import { Sidebar } from '@/components/Sidebar';
-import { Navbar } from '@/components/Navbar';
+import { HeaderWithSidebars } from '@/components/HeaderWithSidebars';
 import { CustomIcon } from '@/components/CustomIcon';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
-import { usePathname } from 'expo-router';
-import { useRestaurants } from '@/hooks/useRestaurants';
-import { Restaurant } from '@/src/models';
-// @ts-ignore - Contourne les problèmes de typage avec LinearGradient
-import { LinearGradient } from 'expo-linear-gradient';
-
-// Conversion de type pour la compatibilité avec le composant Sidebar
-const convertToSidebarRestaurant = (restaurant: Restaurant) => {
-  return {
-    id: restaurant.id_restaurant.toString(),
-    name: restaurant.nom_restaurant
-  };
-};
+import { useRestaurants } from '@/contexts/RestaurantContext';
+import { useReservations } from '@/hooks/useReservations';
+import { router } from 'expo-router';
 
 // Données factices pour le tableau de bord
 const mockData = {
@@ -74,189 +62,124 @@ const mockData = {
 interface DashboardCardProps {
   title: string;
   value: string | number;
-  subtitle?: string;
   icon: string;
   color?: string;
   onPress?: () => void;
 }
 
-function DashboardCard({ title, value, subtitle, icon, color, onPress }: DashboardCardProps) {
+function DashboardCard({ title, value, icon, color, onPress }: DashboardCardProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
-  const { width: screenWidth } = Dimensions.get('window');
-  const isSmallScreen = screenWidth < 768;
-  const cardWidth = isSmallScreen ? '100%' : '48%';
   const cardColor = color || colors.primary;
 
   return (
-    <ThemedView style={[
-      styles.card,
-      { 
-        width: cardWidth,
-        marginBottom: 16
-      }
-    ]}>
+    <TouchableOpacity 
+      style={[
+        styles.card, 
+        colorScheme === 'dark' ? { backgroundColor: colors.background } : { backgroundColor: '#FFFFFF' },
+        { borderColor: `${cardColor}10` }
+      ]}
+      activeOpacity={0.7}
+      onPress={onPress}
+    >
       <View style={[styles.cardIconCircle, { backgroundColor: cardColor }]}>
-        <CustomIcon name={icon as any} size={24} color="#fff" />
+        <CustomIcon name={icon as any} size={18} color="#fff" />
       </View>
-      <View style={styles.cardBody}>
+      <View style={styles.cardContent}>
         <ThemedText style={styles.cardTitle}>
           {title}
         </ThemedText>
-        <ThemedText style={[styles.cardValue, { color: cardColor }]}>
+        <ThemedText style={[styles.cardValue, { color: cardColor }]} numberOfLines={1} ellipsizeMode="tail">
           {value}
         </ThemedText>
-        {subtitle && (
-          <ThemedText style={styles.cardSubtitle}>
-            {subtitle}
-          </ThemedText>
-        )}
       </View>
-      <TouchableOpacity 
-        style={styles.cardAction}
-        activeOpacity={0.7}
-        onPress={onPress}
-      >
-        <CustomIcon name="chevron-right" size={20} color={colors.icon} />
-      </TouchableOpacity>
-    </ThemedView>
+      <View style={styles.cardArrow}>
+        <CustomIcon name="chevron-right" size={16} color={colors.icon} />
+      </View>
+    </TouchableOpacity>
   );
 }
 
-function ReservationItem({ reservation, colorScheme }: { reservation: any, colorScheme: 'light' | 'dark' }) {
+interface DashboardCardV2Props {
+  icon: string;
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  onPress?: () => void;
+}
+
+function DashboardCardV2({ icon, title, value, subtitle, onPress }: DashboardCardV2Props) {
+  const colorScheme = useColorScheme();
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
-  
   return (
-    <View style={[styles.reservationItem, { borderBottomColor: `${colors.text}10` }]}>
-      <View style={styles.reservationHeader}>
-        <ThemedText style={styles.reservationClient}>{reservation.client}</ThemedText>
-        <ThemedText style={[styles.reservationTag, { backgroundColor: `${colors.primary}15`, color: colors.primary }]}>
-          {reservation.salle}
+    <TouchableOpacity
+      style={stylesV2.card}
+      activeOpacity={0.8}
+      onPress={onPress}
+    >
+      <View style={stylesV2.headerRow}>
+        <CustomIcon name={icon as any} size={22} color={colors.primary} style={{ marginRight: 8 }} />
+        <ThemedText style={stylesV2.cardTitle} numberOfLines={1} ellipsizeMode="tail">{title}</ThemedText>
+        <View style={stylesV2.chevronContainer}>
+          <CustomIcon name="chevron-right" size={20} color={colors.primary} />
+        </View>
+      </View>
+      <View style={stylesV2.separator} />
+      <View style={stylesV2.valueContainer}>
+        <ThemedText
+          style={stylesV2.value}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.5}
+        >
+          {value}
         </ThemedText>
+        {subtitle && <ThemedText style={stylesV2.subtitle}>{subtitle}</ThemedText>}
       </View>
-      <View style={styles.reservationDetails}>
-        <View style={styles.reservationDetail}>
-          <CustomIcon name="schedule" size={14} color={colors.icon} />
-          <ThemedText style={styles.reservationDetailText}>{reservation.heure}</ThemedText>
-        </View>
-        <View style={styles.reservationDetail}>
-          <CustomIcon name="people" size={14} color={colors.icon} />
-          <ThemedText style={styles.reservationDetailText}>{reservation.personnes} pers.</ThemedText>
-        </View>
-        <View style={styles.reservationDetail}>
-          <CustomIcon name="phone" size={14} color={colors.icon} />
-          <ThemedText style={styles.reservationDetailText}>{reservation.telephone}</ThemedText>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-function StockItem({ stock, colorScheme }: { stock: any, colorScheme: 'light' | 'dark' }) {
-  const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
-  const stockRatio = stock.quantite / stock.seuil;
-  const stockColor = stockRatio <= 0.5 ? '#F44336' : stockRatio <= 0.75 ? '#FF9800' : '#4CAF50';
-  
-  return (
-    <View style={[styles.stockItem, { borderBottomColor: `${colors.text}10` }]}>
-      <View style={styles.stockInfo}>
-        <ThemedText style={styles.stockName}>{stock.nom}</ThemedText>
-        <ThemedText style={styles.stockQuantity}>
-          {stock.quantite} {stock.unite} / {stock.seuil} {stock.unite}
-        </ThemedText>
-      </View>
-      <View style={styles.stockBarContainer}>
-        <View style={[styles.stockBarBg, { backgroundColor: `${colors.text}15` }]}>
-          <View 
-            style={[
-              styles.stockBarFill, 
-              { 
-                backgroundColor: stockColor,
-                width: `${Math.min(100, (stock.quantite / stock.seuil) * 100)}%` 
-              }
-            ]} 
-          />
-        </View>
-      </View>
-    </View>
-  );
-}
-
-function NoteItem({ note, colorScheme }: { note: any, colorScheme: 'light' | 'dark' }) {
-  const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
-  
-  return (
-    <View style={[styles.noteItem, { backgroundColor: `${colors.text}08` }]}>
-      <View style={styles.noteHeader}>
-        <ThemedText style={styles.noteAuthor}>{note.auteur}</ThemedText>
-        <ThemedText style={styles.noteDate}>{note.date}</ThemedText>
-      </View>
-      <ThemedText style={styles.noteMessage}>{note.message}</ThemedText>
-    </View>
+    </TouchableOpacity>
   );
 }
 
 export default function DashboardScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
-  const pathname = usePathname();
   
-  // Utilisation du hook pour récupérer les restaurants
   const { 
-    restaurants,
-    loading,
-    error,
     selectedRestaurant,
-    setSelectedRestaurant,
+    loading: restaurantsLoading,
+    error: restaurantsError,
     refreshRestaurants
   } = useRestaurants();
-  
-  // État pour gérer l'ouverture/fermeture de la sidebar et navbar
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isNavbarOpen, setIsNavbarOpen] = useState(false);
-  
-  // Conversion des restaurants pour le composant Sidebar
-  const sidebarRestaurants = restaurants.map(convertToSidebarRestaurant);
-  
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-    if (isNavbarOpen) setIsNavbarOpen(false);
-  };
-  
-  const toggleNavbar = () => {
-    setIsNavbarOpen(!isNavbarOpen);
-    if (isSidebarOpen) setIsSidebarOpen(false);
-  };
-  
-  const handleRestaurantSelect = (sidebarRestaurant: { id: string; name: string }) => {
-    const restaurant = restaurants.find(r => r.id_restaurant.toString() === sidebarRestaurant.id);
-    if (restaurant) {
-      setSelectedRestaurant(restaurant);
-    }
-    setIsSidebarOpen(false);
-  };
 
-  // Afficher un indicateur de chargement si les données sont en cours de récupération
-  if (loading) {
+  const {
+    loading: reservationsLoading,
+    error: reservationsError,
+    getFutureReservations,
+    refreshReservations
+  } = useReservations(selectedRestaurant?.id_restaurant || null);
+
+  if (restaurantsLoading || reservationsLoading) {
     return (
       <ThemedView style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <ThemedText style={styles.loadingText}>Chargement des restaurants...</ThemedText>
+        <ThemedText style={styles.loadingText}>Chargement des données...</ThemedText>
       </ThemedView>
     );
   }
 
-  // Afficher un message d'erreur si nécessaire
-  if (error || !selectedRestaurant) {
+  if (restaurantsError || reservationsError || !selectedRestaurant) {
     return (
       <ThemedView style={[styles.container, styles.centered]}>
-        <CustomIcon name="error" size={40} color={colors.error} />
+        <CustomIcon name="alert-circle" size={40} color={colors.error} />
         <ThemedText style={styles.errorText}>
-          {error || "Aucun restaurant disponible"}
+          {restaurantsError || reservationsError || "Aucun restaurant disponible"}
         </ThemedText>
         <TouchableOpacity 
           style={styles.retryButton}
-          onPress={refreshRestaurants}
+          onPress={() => {
+            refreshRestaurants();
+            refreshReservations();
+          }}
         >
           <ThemedText style={styles.retryText}>Réessayer</ThemedText>
         </TouchableOpacity>
@@ -264,186 +187,55 @@ export default function DashboardScreen() {
     );
   }
 
+  const futureReservations = getFutureReservations();
+
   return (
     <ThemedView style={styles.container}>
-      <Header 
-        restaurantName={selectedRestaurant.nom_restaurant}
-        onSidebarToggle={toggleSidebar}
-        onMenuToggle={toggleNavbar}
-      />
-      
-      {/* Sidebar pour la liste des restaurants */}
-      <Sidebar 
-        isVisible={isSidebarOpen}
-        restaurants={sidebarRestaurants}
-        selectedRestaurantId={selectedRestaurant.id_restaurant.toString()}
-        onRestaurantSelect={handleRestaurantSelect}
-        onClose={() => setIsSidebarOpen(false)}
-      />
-      
-      {/* Navbar pour la navigation dans l'app */}
-      <Navbar 
-        isVisible={isNavbarOpen}
-        onClose={() => setIsNavbarOpen(false)}
-        currentRoute={pathname}
-      />
+      <HeaderWithSidebars restaurantName={selectedRestaurant.nom_restaurant} />
       
       {/* Contenu principal */}
       <ScrollView 
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
+        style={stylesV2.content}
+        contentContainerStyle={stylesV2.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        <ThemedText type="title" style={styles.mainTitle}>
-          Tableau de bord
-        </ThemedText>
-        
-        {/* Aperçu rapide - Cards */}
-        <View style={styles.cardsContainer}>
-          <DashboardCard 
-            title="Réservations" 
-            value={mockData.reservations.today} 
-            subtitle={`${mockData.reservations.upcoming} à venir`} 
-            icon="event" 
-            color="#4CAF50"
-          />
-          <DashboardCard 
-            title="Commandes" 
-            value={mockData.commandes.enCours} 
-            subtitle={`${mockData.commandes.total} au total`} 
-            icon="shopping_bag" 
-            color="#2196F3"
-          />
-          <DashboardCard 
-            title="CA Journalier" 
-            value={`${mockData.commandes.chiffreJour.toFixed(2)} €`} 
-            subtitle={`${mockData.commandes.chiffreSemaine.toFixed(2)} € cette semaine`} 
-            icon="euro_symbol" 
-            color="#673AB7"
-          />
-          <DashboardCard 
-            title="Alertes Stock" 
-            value={mockData.stocks.alertes} 
-            subtitle="Ingrédients à commander" 
-            icon="warning" 
-            color="#FF9800"
-          />
+        <View style={stylesV2.titleContainer}>
+          <ThemedText type="title" style={stylesV2.mainTitle}>
+            Tableau de bord
+          </ThemedText>
+          <TouchableOpacity 
+            onPress={() => {
+              refreshRestaurants();
+              refreshReservations();
+            }} 
+            style={stylesV2.refreshButton}
+          >
+            <CustomIcon name="refresh" size={24} color={colors.primary} />
+          </TouchableOpacity>
         </View>
-        
-        {/* Section Réservations */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={[styles.sectionIconContainer, { backgroundColor: "#4CAF50" }]}>
-              <CustomIcon name="event" size={20} color="#fff" />
-            </View>
-            <ThemedText type="subtitle" style={styles.sectionTitle}>
-              Réservations du jour
-            </ThemedText>
-            <TouchableOpacity style={styles.sectionAction}>
-              <CustomIcon name="chevron-right" size={18} color={colors.icon} />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.reservationsContainer}>
-            {mockData.reservations.detailsToday.length > 0 ? (
-              mockData.reservations.detailsToday.map((reservation) => (
-                <ReservationItem 
-                  key={`reservation-${reservation.id}`} 
-                  reservation={reservation} 
-                  colorScheme={colorScheme === 'dark' ? 'dark' : 'light'} 
-                />
-              ))
-            ) : (
-              <ThemedText style={styles.emptyStateText}>Aucune réservation aujourd'hui</ThemedText>
-            )}
-          </View>
-        </View>
-        
-        {/* Section Stock */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={[styles.sectionIconContainer, { backgroundColor: "#FF9800" }]}>
-              <CustomIcon name="warning" size={20} color="#fff" />
-            </View>
-            <ThemedText type="subtitle" style={styles.sectionTitle}>
-              Alertes de stock
-            </ThemedText>
-            <TouchableOpacity style={styles.sectionAction}>
-              <CustomIcon name="chevron-right" size={18} color={colors.icon} />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.stocksContainer}>
-            {mockData.stocks.ingredients.map((stock) => (
-              <StockItem 
-                key={`stock-${stock.id}`} 
-                stock={stock} 
-                colorScheme={colorScheme === 'dark' ? 'dark' : 'light'} 
-              />
-            ))}
-          </View>
-        </View>
-        
-        {/* Section Personnel */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={[styles.sectionIconContainer, { backgroundColor: "#673AB7" }]}>
-              <CustomIcon name="people" size={20} color="#fff" />
-            </View>
-            <ThemedText type="subtitle" style={styles.sectionTitle}>
-              Personnel
-            </ThemedText>
-            <TouchableOpacity style={styles.sectionAction}>
-              <CustomIcon name="chevron-right" size={18} color={colors.icon} />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.statsContainer}>
-            <View style={styles.statsRow}>
-              <ThemedText style={styles.statLabel}>Employés présents:</ThemedText>
-              <View style={styles.statValueContainer}>
-                <ThemedText style={styles.statValue}>{mockData.employes.presents}/{mockData.employes.total}</ThemedText>
-              </View>
-            </View>
-            <View style={styles.statsRow}>
-              <ThemedText style={styles.statLabel}>Serveurs:</ThemedText>
-              <View style={styles.statValueContainer}>
-                <ThemedText style={styles.statValue}>{mockData.employes.typesRepartition.find(t => t.type === 'Serveur')?.nombre || 0}</ThemedText>
-              </View>
-            </View>
-            <View style={styles.statsRow}>
-              <ThemedText style={styles.statLabel}>Cuisiniers:</ThemedText>
-              <View style={styles.statValueContainer}>
-                <ThemedText style={styles.statValue}>{mockData.employes.typesRepartition.find(t => t.type === 'Cuisinier')?.nombre || 0}</ThemedText>
-              </View>
-            </View>
-          </View>
-        </View>
-        
-        {/* Section Notes */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={[styles.sectionIconContainer, { backgroundColor: "#2196F3" }]}>
-              <CustomIcon name="note" size={20} color="#fff" />
-            </View>
-            <ThemedText type="subtitle" style={styles.sectionTitle}>
-              Notes de service
-            </ThemedText>
-            <TouchableOpacity style={styles.sectionAction}>
-              <CustomIcon name="add" size={18} color={colors.icon} />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.notesContainer}>
-            {mockData.notes.map((note) => (
-              <NoteItem 
-                key={`note-${note.id}`} 
-                note={note} 
-                colorScheme={colorScheme === 'dark' ? 'dark' : 'light'} 
-              />
-            ))}
-          </View>
-        </View>
+        <DashboardCardV2
+          icon="event"
+          title={"Réservations aujourd'hui"}
+          value={futureReservations.length.toString()}
+          subtitle={futureReservations.length === 1 ? 'réservation' : 'réservations'}
+          onPress={() => router.push('/(tabs)/reservations')}
+        />
+        <DashboardCardV2
+          icon="shopping_bag"
+          title="Commandes"
+          value={"6"}
+          subtitle={"Commandes en cours : 1"}
+        />
+        <DashboardCardV2
+          icon="schedule"
+          title="Heures de pointe"
+          value={"12h-14h, 19h-21h"}
+        />
+        <DashboardCardV2
+          icon="fridge-outline"
+          title="Stocks critiques"
+          value={""}
+        />
       </ScrollView>
     </ThemedView>
   );
@@ -482,275 +274,173 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    padding: 20,
+    padding: 16,
     paddingBottom: 32,
   },
   mainTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 24,
+    marginBottom: 20,
   },
-  cardsContainer: {
+  dashboardGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginBottom: 20,
   },
-  sectionIconContainer: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: '#F27E42',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  section: {
-    marginBottom: 24,
-    backgroundColor: 'rgba(0, 0, 0, 0.02)',
-    borderRadius: 16,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.03)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    marginLeft: 8,
-    flex: 1,
-  },
-  sectionAction: {
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    paddingVertical: 20,
-    borderRadius: 12,
+    width: '48%',
+    height: 96,
     marginBottom: 16,
-    backgroundColor: '#FFFFFF',
+    padding: 14,
+    paddingTop: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(242, 126, 66, 0.1)',
     shadowColor: 'rgba(0, 0, 0, 0.1)',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    overflow: 'hidden',
   },
   cardIconCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 2,
+    alignSelf: 'center',
   },
-  cardBody: {
+  cardContent: {
     flex: 1,
-    marginLeft: 16,
+    marginLeft: 8,
     flexDirection: 'column',
+    justifyContent: 'center',
+    paddingRight: 5,
+    height: '100%',
+    paddingTop: 10,
   },
   cardTitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#888',
+    fontWeight: '400',
     marginBottom: 4,
+    marginTop: 0,
   },
   cardValue: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 2,
+    marginTop: 8,
+    lineHeight: 26,
+  },
+  cardValueUnit: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 2,
+    lineHeight: 22,
   },
   cardSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
     opacity: 0.6,
+    lineHeight: 14,
   },
-  cardAction: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+  cardArrow: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  reservationsContainer: {
-    marginTop: 10,
+});
+
+const stylesV2 = StyleSheet.create({
+  content: {
+    flex: 1,
+    backgroundColor: '#F6F5F8',
   },
-  reservationItem: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
+  contentContainer: {
+    padding: 18,
+    paddingBottom: 32,
   },
-  reservationHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  reservationClient: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  reservationTag: {
-    fontSize: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  reservationDetails: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  reservationDetail: {
+  titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 16,
-    marginBottom: 4,
-  },
-  reservationDetailText: {
-    fontSize: 14,
-    marginLeft: 4,
-    opacity: 0.6,
-  },
-  stocksContainer: {
-    marginTop: 10,
-  },
-  stockItem: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
-  },
-  stockInfo: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  stockName: {
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  stockQuantity: {
-    fontSize: 14,
-    opacity: 0.7,
-  },
-  stockBarContainer: {
-    height: 8,
-    marginTop: 6,
-  },
-  stockBarBg: {
-    height: '100%',
-    width: '100%',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  stockBarFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  notesContainer: {
-    marginTop: 10,
-    gap: 10,
-  },
-  noteItem: {
-    padding: 12,
-    borderRadius: 10,
-  },
-  noteHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  noteAuthor: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  noteDate: {
-    fontSize: 12,
-    opacity: 0.6,
-  },
-  noteMessage: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  emptyStateText: {
-    textAlign: 'center',
-    paddingVertical: 20,
-    opacity: 0.6,
-  },
-  highlight: {
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: 'rgba(242, 126, 66, 0.08)',
-    borderRadius: 12,
+    marginBottom: 18,
     marginTop: 8,
-    overflow: 'hidden',
   },
-  highlightValue: {
-    fontSize: 40,
+  mainTitle: {
+    fontSize: 30,
     fontWeight: 'bold',
-    color: '#F27E42',
+    color: '#111',
   },
-  highlightLabel: {
-    fontSize: 14,
-    opacity: 0.7,
-    marginTop: 4,
+  refreshButton: {
+    padding: 8,
+    borderRadius: 20,
   },
-  statsContainer: {
-    backgroundColor: 'rgba(0, 0, 0, 0.02)',
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 10,
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    marginBottom: 22,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 22,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
-  },
-  statLabel: {
-    fontSize: 14,
-    opacity: 0.7,
-  },
-  statValueContainer: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 16,
+    flexWrap: 'nowrap',
+    minHeight: 28,
   },
-  statValue: {
+  cardTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-  },
-  statBadge: {
-    marginLeft: 8,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 4,
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
-  },
-  badgeContainer: {
-    marginTop: 10,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  badge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: 'rgba(242, 126, 66, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(242, 126, 66, 0.2)',
-  },
-  badgeText: {
-    fontSize: 12,
-    color: '#F27E42',
     fontWeight: '600',
+    color: '#222',
+    flex: 1,
+  },
+  chevronContainer: {
+    marginLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#ECECEC',
+    marginBottom: 12,
+  },
+  valueContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 38,
+    marginTop: 2,
+    marginBottom: 2,
+  },
+  value: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#F27E42',
+    marginBottom: 2,
+    textAlign: 'center',
+    flexShrink: 1,
+    width: '100%',
+  },
+  subtitle: {
+    fontSize: 15,
+    color: '#A0A0A0',
+    marginTop: 6,
+    textAlign: 'center',
   },
 }); 

@@ -107,10 +107,10 @@ export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
   
   const handleNavigation = (route: string) => {
     onClose();
-    // Petit délai pour permettre à l'animation de se terminer
-    setTimeout(() => {
-      router.push(route as any);
-    }, 300);
+    // Fermer d'abord la navbar
+    setIsRendered(false);
+    // Naviguer immédiatement avec le type correct
+    router.navigate(route as any);
   };
 
   const handleLogout = async () => {
@@ -135,12 +135,12 @@ export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
 
   // Liste des éléments de navigation incluant le bouton de déconnexion
   const navItems: NavItem[] = [
-    { id: '1', title: 'Tableau de bord', icon: 'dashboard', route: '/' },
-    { id: '2', title: 'Réservations', icon: 'event', route: '/reservations' },
-    { id: '3', title: 'Commandes', icon: 'shopping_bag', route: '/orders' },
-    { id: '4', title: 'Statistiques', icon: 'assessment', route: '/stats' },
-    { id: '5', title: 'Paramètres', icon: 'settings', route: '/settings' },
-    { id: '6', title: 'Support', icon: 'help', route: '/support' },
+    { id: '1', title: 'Tableau de bord', icon: 'dashboard', route: '/(tabs)/dashboard' },
+    { id: '2', title: 'Réservations', icon: 'event', route: '/(tabs)/reservations' },
+    { id: '3', title: 'Commandes', icon: 'shopping_bag', route: '/(tabs)/orders' },
+    { id: '4', title: 'Statistiques', icon: 'assessment', route: '/(tabs)/stats' },
+    { id: '5', title: 'Paramètres', icon: 'settings', route: '/(tabs)/settings' },
+    { id: '6', title: 'Support', icon: 'help', route: '/(tabs)/support' },
     // Séparateur
     { id: 'separator', title: '', icon: '' },
     // Bouton de déconnexion

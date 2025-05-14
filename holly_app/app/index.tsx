@@ -51,6 +51,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   text: {
-    marginTop: 20,
-  }
+    marginTop: 12,
+    fontSize: 16,
+  },
 }); 

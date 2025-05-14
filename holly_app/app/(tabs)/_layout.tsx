@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Tabs } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
@@ -13,13 +13,11 @@ export default function AppLayout() {
   
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   
-  // Vérifier l'authentification une seule fois au chargement du layout
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const isAuthenticated = await authService.isAuthenticated();
         if (!isAuthenticated) {
-          // Rediriger vers login si non authentifié
           router.replace('/auth/login');
         }
       } catch (error) {
@@ -33,7 +31,6 @@ export default function AppLayout() {
     checkAuth();
   }, []);
   
-  // Afficher un chargement pendant la vérification d'authentification
   if (!isAuthChecked) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
@@ -43,12 +40,32 @@ export default function AppLayout() {
   }
 
   return (
-    <Stack screenOptions={{
-      headerShown: false,
-    }}>
-      <Stack.Screen name="dashboard" />
-      <Stack.Screen name="index" />
-      <Stack.Screen name="explore" />
-    </Stack>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: { display: 'none' },
+        animation: 'none',
+      }}
+      initialRouteName="dashboard"
+    >
+      <Tabs.Screen 
+        name="dashboard"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen 
+        name="explore"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen 
+        name="reservations"
+        options={{
+          href: null,
+        }}
+      />
+    </Tabs>
   );
 }

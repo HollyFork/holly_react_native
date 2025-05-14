@@ -89,7 +89,7 @@ export default function LoginScreen() {
     if (pathname.includes('/auth/login')) {
       console.log('Redirection vers le dashboard');
       router.replace({
-        pathname: '/dashboard',
+        pathname: '/(tabs)/dashboard',
         params: { user: JSON.stringify(userData) }
       });
     }
