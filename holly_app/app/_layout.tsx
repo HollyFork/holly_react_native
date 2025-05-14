@@ -11,6 +11,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { ThemedView } from '@/components/ThemedView';
 import { RestaurantProvider } from '@/contexts/RestaurantContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -29,20 +30,22 @@ export default function RootLayout() {
   }
 
   return (
-    <PortalProvider>
-      <RestaurantProvider>
-        <ThemedView style={{ flex: 1, backgroundColor: colors.background }}>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-            }}
-          >
-            <Stack.Screen name="index" />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="auth" options={{ headerShown: false }} />
-          </Stack>
-        </ThemedView>
-      </RestaurantProvider>
-    </PortalProvider>
+    <AuthProvider>
+      <PortalProvider>
+        <RestaurantProvider>
+          <ThemedView style={{ flex: 1, backgroundColor: colors.background }}>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+              }}
+            >
+              <Stack.Screen name="index" />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="auth" options={{ headerShown: false }} />
+            </Stack>
+          </ThemedView>
+        </RestaurantProvider>
+      </PortalProvider>
+    </AuthProvider>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -12,6 +12,7 @@ import { useNotes } from '@/hooks/useNotes';
 import { useCommandes } from '@/hooks/useCommandes';
 import { useStocks } from '@/hooks/useStocks';
 import { router } from 'expo-router';
+import { FontAwesome } from '@expo/vector-icons';
 
 interface DashboardCardV2Props {
   icon: string;
@@ -57,6 +58,8 @@ export default function DashboardScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const [allDataReady, setAllDataReady] = useState(false);
   
   const { 
     selectedRestaurant,
@@ -93,26 +96,89 @@ export default function DashboardScreen() {
     refreshStocks
   } = useStocks(selectedRestaurant?.id_restaurant || null);
 
+  // Vérifier quand toutes les données sont prêtes
+  useEffect(() => {
+    const allLoading = restaurantsLoading || reservationsLoading || notesLoading || commandesLoading || stocksLoading;
+    if (!allLoading) {
+      console.log('Toutes les données sont chargées');
+      setAllDataReady(true);
+    }
+  }, [restaurantsLoading, reservationsLoading, notesLoading, commandesLoading, stocksLoading]);
+
   const handleRefresh = async () => {
     if (isRefreshing) return;
     
     setIsRefreshing(true);
+    setAllDataReady(false);
+    
     try {
-      await Promise.all([
+      // Utiliser Promise.allSettled pour continuer même si certaines requêtes échouent
+      const results = await Promise.allSettled([
         refreshRestaurants(),
-        refreshReservations(),
-        refreshNotes(),
-        refreshCommandes(),
-        refreshStocks()
+        selectedRestaurant ? refreshReservations() : Promise.resolve(),
+        selectedRestaurant ? refreshNotes() : Promise.resolve(),
+        selectedRestaurant ? refreshCommandes() : Promise.resolve(),
+        selectedRestaurant ? refreshStocks() : Promise.resolve()
       ]);
+      
+      // Vérifier les résultats
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          console.error(`La requête ${index} a échoué:`, result.reason);
+        }
+      });
+      
+      setAllDataReady(true);
     } catch (error) {
       console.error('Erreur lors du rafraîchissement:', error);
     } finally {
       setIsRefreshing(false);
+      setLoadingTimeout(false);
     }
   };
 
-  if (restaurantsLoading || reservationsLoading || notesLoading || commandesLoading || stocksLoading) {
+  // Gérer le timeout du chargement
+  useEffect(() => {
+    if (restaurantsLoading || (selectedRestaurant && (reservationsLoading || notesLoading || commandesLoading || stocksLoading))) {
+      console.log('Démarrage du timer de timeout pour le chargement des données...');
+      const timer = setTimeout(() => {
+        console.log('Timeout atteint pour le chargement des données');
+        setLoadingTimeout(true);
+      }, 10000); // Réduire à 10 secondes pour réagir plus rapidement
+      
+      return () => {
+        console.log('Nettoyage du timer de timeout');
+        clearTimeout(timer);
+      };
+    }
+  }, [restaurantsLoading, reservationsLoading, notesLoading, commandesLoading, stocksLoading, selectedRestaurant]);
+
+  // Si nous avons un restaurant sélectionné et toutes les données sont prêtes, ou un timeout s'est produit
+  // mais nous avons déjà un restaurant, afficher le dashboard même avec des données partielles
+  const shouldShowDashboard = selectedRestaurant && (allDataReady || (loadingTimeout && !restaurantsLoading));
+
+  // Afficher l'erreur si une erreur survient dans le chargement des restaurants
+  const hasRestaurantError = restaurantsError;
+  if (hasRestaurantError) {
+    return (
+      <ThemedView style={[styles.container, styles.centered]}>
+        <FontAwesome name="exclamation-triangle" size={50} color={colors.error} />
+        <ThemedText style={styles.errorText}>
+          {restaurantsError || "Erreur lors du chargement des restaurants"}
+        </ThemedText>
+        <TouchableOpacity 
+          style={styles.refreshButton} 
+          onPress={handleRefresh}
+        >
+          <ThemedText style={styles.refreshButtonText}>Réessayer</ThemedText>
+        </TouchableOpacity>
+      </ThemedView>
+    );
+  }
+
+  // Afficher le chargement uniquement lorsque les restaurants sont en cours de chargement
+  // et que le timeout n'est pas atteint
+  if (restaurantsLoading && !loadingTimeout) {
     return (
       <ThemedView style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -121,32 +187,51 @@ export default function DashboardScreen() {
     );
   }
 
-  if (restaurantsError || reservationsError || notesError || commandesError || stocksError || !selectedRestaurant) {
+  // Afficher le message de timeout uniquement si nous n'avons pas encore de restaurant sélectionné
+  if (loadingTimeout && !shouldShowDashboard) {
     return (
       <ThemedView style={[styles.container, styles.centered]}>
-        <CustomIcon name="alert-circle" size={40} color={colors.error} />
-        <ThemedText style={styles.errorText}>
-          {restaurantsError || reservationsError || notesError || commandesError || stocksError || "Aucun restaurant disponible"}
+        <FontAwesome name="clock-o" size={50} color={colors.primary} />
+        <ThemedText style={styles.timeoutText}>
+          Le chargement des données prend plus de temps que prévu...
+        </ThemedText>
+        <ThemedText style={styles.timeoutSubText}>
+          Vérifiez votre connexion internet ou réessayez plus tard.
         </ThemedText>
         <TouchableOpacity 
-          style={styles.retryButton}
+          style={styles.refreshButton} 
           onPress={() => {
-            refreshRestaurants();
-            refreshReservations();
-            refreshNotes();
-            refreshCommandes();
-            refreshStocks();
+            setLoadingTimeout(false);
+            handleRefresh();
           }}
         >
-          <ThemedText style={styles.retryText}>Réessayer</ThemedText>
+          <ThemedText style={styles.refreshButtonText}>Réessayer</ThemedText>
         </TouchableOpacity>
       </ThemedView>
     );
   }
 
-  const futureReservations = getFutureReservations();
-  const commandesEnCours = commandes.filter(cmd => cmd.statut === 'EN_COURS').length;
-  const stocksEnAlerte = stocks.filter(stock => stock.quantite_en_stock <= stock.seuil_alerte).length;
+  if (!selectedRestaurant) {
+    return (
+      <ThemedView style={[styles.container, styles.centered]}>
+        <FontAwesome name="exclamation-circle" size={50} color={colors.error} />
+        <ThemedText style={styles.errorText}>
+          Aucun restaurant disponible
+        </ThemedText>
+        <TouchableOpacity 
+          style={styles.refreshButton} 
+          onPress={handleRefresh}
+        >
+          <ThemedText style={styles.refreshButtonText}>Réessayer</ThemedText>
+        </TouchableOpacity>
+      </ThemedView>
+    );
+  }
+
+  // Utiliser les données disponibles, même partielles
+  const futureReservations = getFutureReservations ? getFutureReservations() : [];
+  const commandesEnCours = commandes ? commandes.filter(cmd => cmd.statut === 'EN_COURS').length : 0;
+  const stocksEnAlerte = stocks ? stocks.filter(stock => stock.quantite_en_stock <= stock.seuil_alerte).length : 0;
 
   return (
     <ThemedView style={styles.container}>
@@ -232,21 +317,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   errorText: {
-    marginTop: 12,
+    marginVertical: 20,
     fontSize: 16,
     textAlign: 'center',
     paddingHorizontal: 30,
   },
-  retryButton: {
+  timeoutText: {
     marginTop: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: '#F27E42',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    paddingHorizontal: 30,
   },
-  retryText: {
+  timeoutSubText: {
+    marginTop: 10,
+    fontSize: 14,
+    textAlign: 'center',
+    paddingHorizontal: 30,
+    opacity: 0.8,
+  },
+  refreshButton: {
+    marginTop: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#2196F3',
+    borderRadius: 5,
+  },
+  refreshButtonText: {
     color: 'white',
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   content: {
     flex: 1,

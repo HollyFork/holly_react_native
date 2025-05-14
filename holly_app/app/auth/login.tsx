@@ -19,7 +19,7 @@ import BackgroundIcons from '../../components/BackgroundIcons';
 import RestaurantIcon from '../../components/RestaurantIcon';
 import AnimatedInput from '../../components/AnimatedInput';
 import { useThemeColor } from '../../hooks/useThemeColor';
-import { authService } from '../../src/services/auth/authService';
+import { useAuth } from '@/contexts/AuthContext';
 import * as ScreenOrientation from 'expo-screen-orientation';
 
 const { width } = Dimensions.get('window');
@@ -28,10 +28,10 @@ const isTablet = width >= 768;
 export default function LoginScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [redirectionAttempted, setRedirectionAttempted] = useState(false);
+  const [localIsLoading, setLocalIsLoading] = useState(false);
   
   const { colors, isDark, gradientColors } = useThemeColor();
+  const { login, isAuthenticated, isLoading: authIsLoading, user } = useAuth();
   const pathname = usePathname();
   
   useEffect(() => {
@@ -46,29 +46,18 @@ export default function LoginScreen() {
 
     lockOrientation();
 
-    // Vérifier si l'utilisateur est déjà connecté
-    const checkAuth = async () => {
-      // Éviter les vérifications multiples si une redirection a déjà été tentée
-      if (redirectionAttempted) return;
-      
-      try {
-        if (await authService.isAuthenticated()) {
-          // Obtenir les informations actuelles de l'utilisateur
-          const userData = await authService.getCurrentUser();
-          
-          // Ne rediriger que si on a des données utilisateur valides
-          if (userData && userData.id) {
-            console.log('Utilisateur déjà connecté, redirection vers dashboard');
-            setRedirectionAttempted(true);
-            setTimeout(() => redirectToDashboard(userData), 100);
-          }
-        }
-      } catch (error) {
-        console.error('Erreur lors de la vérification d\'authentification:', error);
+    // Gérer la redirection si l'utilisateur est déjà authentifié
+    // authIsLoading est important ici pour attendre que l'état initial soit vérifié par AuthProvider
+    if (!authIsLoading && isAuthenticated && user && user.id) {
+      console.log('LoginScreen: Utilisateur déjà authentifié (via useAuth), redirection vers dashboard');
+      // S'assurer que nous sommes toujours sur la page de login avant de rediriger
+      if (pathname.includes('/auth/login')) {
+        router.replace({
+          pathname: '/(tabs)/dashboard',
+          // Plus besoin de passer 'user' en params si RestaurantContext le gère via useAuth
+        });
       }
-    };
-    
-    checkAuth();
+    }
 
     // Restaurer l'orientation par défaut lors du démontage
     return () => {
@@ -76,91 +65,38 @@ export default function LoginScreen() {
         console.error('Erreur lors du déverrouillage de l\'orientation:', error);
       });
     };
-  }, [redirectionAttempted]);
+  }, [isAuthenticated, authIsLoading, user, pathname]);
   
-  const redirectToDashboard = (userData: any) => {
-    // Vérifier que les données utilisateur sont valides
-    if (!userData || !userData.id) {
-      console.error('Données utilisateur invalides pour la redirection', userData);
-      return;
-    }
-    
-    // S'assurer que nous sommes toujours sur la page de login avant de rediriger
-    if (pathname.includes('/auth/login')) {
-      console.log('Redirection vers le dashboard');
-      router.replace({
-        pathname: '/(tabs)/dashboard',
-        params: { user: JSON.stringify(userData) }
-      });
-    }
-  };
-
   const handleLogin = async () => {
     if (!username.trim() || !password.trim()) {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs');
       return;
     }
     
+    setLocalIsLoading(true);
     try {
-      setIsLoading(true);
-      const response = await authService.login({ 
+      await login({
         username: username.trim(), 
         password: password.trim() 
       });
-      
-      // Accédez aux données de la réponse correctement
-      if (response && response.data) {
-        // Vérifier que la réponse contient un ID utilisateur valide
-        if (!response.data.id_user && typeof response.data.id_user !== 'number') {
-          console.error('Erreur: ID utilisateur manquant dans la réponse:', response.data);
-          throw new Error('Données utilisateur incomplètes (ID manquant)');
-        }
-        
-        // Assurer que l'objet utilisateur a la propriété id pour compatibilité avec le dashboard
-        const userData = {
-          ...response.data,
-          id: response.data.id_user // Ajouter l'alias id pour la propriété id_user
-        };
-        
-        console.log('Préparation des données utilisateur pour stockage:', userData);
-        
-        // Stocker les données utilisateur si nécessaire
-        await authService.setUserData(userData, ''); // Pas de token, mais stockage des données utilisateur
-        setRedirectionAttempted(true);
-        redirectToDashboard(userData);
-      } else {
-        throw new Error('Réponse invalide du serveur');
-      }
+      console.log('Connexion réussie via AuthContext dans LoginScreen');
     } catch (error: any) {
-      console.error('Erreur de login détaillée:', error);
-      
-      // Afficher des informations plus détaillées sur l'erreur
-      let errorMessage = 'Une erreur inattendue est survenue';
-      
-      if (error.response) {
-        // La requête a été effectuée et le serveur a répondu avec un code d'état
-        console.error('Erreur de réponse:', error.response.status, error.response.data);
-        errorMessage = error.response.data?.detail || 
-                      error.response.data?.non_field_errors?.[0] || 
-                      `Erreur ${error.response.status}: ${JSON.stringify(error.response.data)}`;
-      } else if (error.request) {
-        // La requête a été effectuée mais aucune réponse n'a été reçue
-        console.error('Erreur de requête:', error.request);
-        errorMessage = 'Aucune réponse du serveur. Vérifiez votre connexion réseau.';
-      } else if (error.message) {
-        // Une erreur s'est produite lors de la configuration de la requête
-        errorMessage = error.message;
-      }
-      
-      Alert.alert(
-        'Erreur de connexion',
-        errorMessage,
-        [{ text: 'OK' }]
-      );
+      Alert.alert('Erreur de connexion', error.message || 'Identifiants incorrects ou problème serveur.');
+      console.error('Erreur lors de handleLogin dans LoginScreen:', error);
     } finally {
-      setIsLoading(false);
+      setLocalIsLoading(false);
     }
   };
+
+  // Si AuthProvider est en train de vérifier l'état initial, afficher un chargement global
+  // Cela évite un flash de l'écran de login si l'utilisateur est déjà connecté.
+  if (authIsLoading) {
+    return (
+      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background}}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <LinearGradient
@@ -232,16 +168,13 @@ export default function LoginScreen() {
             <TouchableOpacity
               style={[
                 styles.button,
-                { 
-                  backgroundColor: colors.primary,
-                  opacity: isLoading ? 0.7 : 1
-                }
+                { backgroundColor: colors.primary },
+                (localIsLoading || authIsLoading) && styles.buttonDisabled
               ]}
               onPress={handleLogin}
-              disabled={isLoading}
-              activeOpacity={0.8}
+              disabled={localIsLoading || authIsLoading}
             >
-              {isLoading ? (
+              {(localIsLoading || authIsLoading) ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <Text style={styles.buttonText}>Se connecter</Text>
@@ -329,6 +262,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 2.62,
+  },
+  buttonDisabled: {
+    backgroundColor: '#A0A0A0',
+    opacity: 0.7,
   },
   buttonText: {
     color: '#FFFFFF',

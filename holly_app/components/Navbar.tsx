@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { authService } from '@/src/services/auth/authService';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Ajout de l'interface pour l'orientation
 interface Orientation {
@@ -41,9 +41,11 @@ const NAVBAR_WIDTH = Math.min(280, width * 0.7);
 
 export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
   const colorScheme = useColorScheme();
-  const insets = useSafeAreaInsets();
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const router = useRouter();
+  const { logout } = useAuth();
+  const insets = useSafeAreaInsets();
+  const [isRendered, setIsRendered] = useState(isVisible);
   
   // Gestion de l'orientation
   const [orientation, setOrientation] = useState<Orientation>(() => {
@@ -73,9 +75,6 @@ export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
   // Animation
   const translateX = useSharedValue(isVisible ? 0 : NAVBAR_WIDTH);
   const isInitialRender = useRef(true);
-  
-  // État pour suivre si le composant est réellement visible dans l'UI
-  const [isRendered, setIsRendered] = React.useState(isVisible);
   
   useEffect(() => {
     if (isInitialRender.current) {
@@ -115,21 +114,15 @@ export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
 
   const handleLogout = async () => {
     onClose();
+    console.log("Navbar: handleLogout appelé. Appel de logout() du AuthContext...");
     
     try {
-      // Appeler le service de déconnexion
-      await authService.logout();
-      
-      // Rediriger vers la page de connexion après un court délai
-      setTimeout(() => {
-        router.replace('/auth/login');
-      }, 300);
+      await logout();
+      console.log("Navbar: logout() du AuthContext terminé.");
+      // Redirection vers la page de connexion
+      router.replace('/auth/login'); 
     } catch (error) {
-      console.error('Erreur lors de la déconnexion:', error);
-      // Forcer la redirection même en cas d'erreur
-      setTimeout(() => {
-        router.replace('/auth/login');
-      }, 300);
+      console.error('Navbar: Erreur lors de l\'appel à logout() du AuthContext:', error);
     }
   };
 

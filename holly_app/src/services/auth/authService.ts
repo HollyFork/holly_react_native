@@ -1,4 +1,4 @@
-import apiClient from '../api';
+import apiClient, { resetCsrfToken } from '../api';
 import { User } from '@/src/models';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -27,17 +27,28 @@ export const authService = {
    * @param credentials Identifiants de connexion
    */
   login: async (credentials: LoginCredentials) => {
-    const response = await apiClient.post<LoginResponse>('/auth/login/', credentials);
-    // Stocker les données en mémoire et dans AsyncStorage
-    if (response.data) {
-      const userData = {
-        ...response.data,
-        id: response.data.id_user // Assurer la compatibilité avec l'interface User
-      };
-      currentUserData = userData;
-      await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
+    try {
+      // S'assurer qu'un token CSRF valide est disponible avant de tenter la connexion
+      await resetCsrfToken();
+      
+      // Effectuer la requête de connexion
+      console.log('Tentative de connexion avec les identifiants fournis...');
+      const response = await apiClient.post<LoginResponse>('/auth/login/', credentials);
+      
+      // Stocker les données en mémoire et dans AsyncStorage
+      if (response.data) {
+        const userData = {
+          ...response.data,
+          id: response.data.id_user // Assurer la compatibilité avec l'interface User
+        };
+        currentUserData = userData;
+        await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
+      }
+      return response;
+    } catch (error) {
+      console.error('Erreur lors de la tentative de connexion:', error);
+      throw error;
     }
-    return response;
   },
 
   /**
