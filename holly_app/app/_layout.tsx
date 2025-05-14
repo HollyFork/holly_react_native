@@ -32,11 +32,14 @@ export default function RootLayout() {
     <PortalProvider>
       <RestaurantProvider>
         <ThemedView style={{ flex: 1, backgroundColor: colors.background }}>
-          <Stack screenOptions={{
-            headerShown: false,
-          }}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="auth" />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+            }}
+          >
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="auth" options={{ headerShown: false }} />
           </Stack>
         </ThemedView>
       </RestaurantProvider>

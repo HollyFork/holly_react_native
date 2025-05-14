@@ -14,6 +14,21 @@ module.exports = function(api) {
           allowUndefined: true,
         },
       ],
+      [
+        'module-resolver',
+        {
+          root: ['.'],
+          alias: {
+            '@': './',
+            '@/components': './components',
+            '@/constants': './constants',
+            '@/contexts': './contexts',
+            '@/hooks': './hooks',
+            '@/assets': './assets',
+          },
+          extensions: ['.ios.js', '.android.js', '.js', '.ts', '.tsx', '.json'],
+        },
+      ],
     ],
   };
 }; 
