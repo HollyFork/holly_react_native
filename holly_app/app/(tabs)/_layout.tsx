@@ -45,6 +45,12 @@ export default function AppLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen 
+        name="notes"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

@@ -26,6 +26,14 @@ export function useNotes(restaurantId: number | null) {
         }
     };
 
+    const deleteNotes = async (noteId: number) => { 
+        try {
+            await notesService.delete(noteId);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+        }
+    }
+
     useEffect(() => {
         fetchNotes();
     }, [restaurantId]);
@@ -35,6 +43,7 @@ export function useNotes(restaurantId: number | null) {
         loading,
         error,
         refreshNotes: fetchNotes,
+        deleteNotes,
     };
 }
 

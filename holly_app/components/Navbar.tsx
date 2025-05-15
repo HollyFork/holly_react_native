@@ -132,6 +132,7 @@ export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
     { id: '2', title: 'Réservations', icon: 'calendar-clock', route: '/(tabs)/reservations' },
     { id: '3', title: 'Commandes', icon: 'cart', route: '/(tabs)/commandes' },
     { id: '4', title: 'Stocks', icon: 'fridge-alert-outline', route: '/(tabs)/stocks' },
+    { id: 'notes', title: 'Notes', icon: 'note-text-outline', route: '/(tabs)/notes' },
     { id: '5', title: 'Statistiques', icon: 'chart-bar', route: '/(tabs)/stats' },
     { id: '6', title: 'Paramètres', icon: 'cog', route: '/(tabs)/settings' },
     { id: '7', title: 'Support', icon: 'help-circle', route: '/(tabs)/support' },
@@ -192,12 +193,12 @@ export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
   }
 
   // Calculer les dimensions adaptatives pour le profil utilisateur
-  const avatarSize = orientation.isLandscape ? 40 : 80;
-  const profilePadding = orientation.isLandscape ? 8 : 20;
-  const userNameSize = orientation.isLandscape ? 14 : 18;
-  const userRoleSize = orientation.isLandscape ? 11 : 14;
-  const avatarMarginBottom = orientation.isLandscape ? 0 : 12;
-  const avatarMarginRight = orientation.isLandscape ? 10 : 0;
+  const avatarSize = 40;
+  const profilePadding = 8;
+  const userNameSize = 14;
+  const userRoleSize = 11;
+  const avatarMarginBottom = 0;
+  const avatarMarginRight = 10;
 
   return (
     <View style={styles.container}>
@@ -222,9 +223,9 @@ export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
           styles.profileContainer, 
           { 
             padding: profilePadding,
-            flexDirection: orientation.isLandscape ? 'row' : 'column',
-            justifyContent: orientation.isLandscape ? 'flex-start' : 'center',
-            alignItems: orientation.isLandscape ? 'center' : 'center',
+            flexDirection: 'row',
+            justifyContent: 'flex-start',
+            alignItems: 'center',
           }
         ]}>
           <View style={[
@@ -246,12 +247,12 @@ export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
               }}
             />
           </View>
-          <View style={orientation.isLandscape ? styles.userInfoLandscape : {}}>
+          <View style={styles.userInfoLandscape}>
             <ThemedText style={[
               styles.userName, 
               { 
                 fontSize: userNameSize,
-                marginBottom: orientation.isLandscape ? 1 : 4 
+                marginBottom: 4 
               }
             ]}>
               Jean Dupont
@@ -260,18 +261,6 @@ export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
               Administrateur
             </ThemedText>
           </View>
-        </View>
-        
-        <View style={styles.header}>
-          <ThemedText type="subtitle" style={styles.headerTitle}>
-            Menu
-          </ThemedText>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={onClose}
-          >
-            <CustomIcon name="close" color={colors.icon} size={20} />
-          </TouchableOpacity>
         </View>
         
         <FlatList
@@ -329,25 +318,6 @@ const styles = StyleSheet.create({
   },
   userRole: {
     opacity: 0.6,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  closeButton: {
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   listContent: {
     padding: 12,

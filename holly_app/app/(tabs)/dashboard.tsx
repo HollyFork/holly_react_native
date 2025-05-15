@@ -293,6 +293,7 @@ export default function DashboardScreen() {
           title="Notes"
           value={notes.length.toString()}
           subtitle={notes.length === 1 ? 'note' : 'notes'}
+          onPress={() => router.push('/(tabs)/notes')}
         />
         <DashboardCardV2
           icon="schedule"
