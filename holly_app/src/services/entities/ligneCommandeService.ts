@@ -1,6 +1,5 @@
+import { LigneCommande } from '@/models/LigneCommande';
 import apiClient from '../utils/api';
-
-import { LigneCommande } from '@/src/models';
 
 const BASE_PATH = '/lignes-commandes';
 

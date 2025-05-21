@@ -1,6 +1,6 @@
+import { Commande } from '@/models/Commande';
 import apiClient from '../utils/api';
 
-import { Commande } from '@/src/models';
 
 const BASE_PATH = '/commandes';
 

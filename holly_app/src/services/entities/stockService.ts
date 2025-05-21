@@ -1,6 +1,5 @@
+import { Stock } from '@/models/Stock';
 import apiClient from '../utils/api';
-
-import { Stock } from '@/src/models';
 
 const BASE_PATH = '/stocks';
 

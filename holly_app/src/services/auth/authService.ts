@@ -1,4 +1,4 @@
-import { User } from '@/src/models';
+import { User } from '@/models/User';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '../utils/api';
 

@@ -1,5 +1,5 @@
-import { Restaurant } from '../../../src/models';
-import apiClient from '../utils/api';
+import { Restaurant } from '@/models/Restaurant';
+import apiClient from '@/services/utils/api';
 
 const BASE_PATH = '/restaurants';
 

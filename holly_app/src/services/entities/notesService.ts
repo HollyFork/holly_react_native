@@ -1,4 +1,5 @@
-import { Note } from '@/src/models';
+
+import { Note } from '@/models/Note';
 import apiClient from '../utils/api';
 const BASE_PATH = '/notes';
 
