@@ -1,7 +1,7 @@
-import { StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import ThemedView from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { StyleSheet, View } from 'react-native';
 
 export default function ExploreScreen() {
   return (

@@ -1,18 +1,19 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { StyleSheet, TouchableOpacity, View, Dimensions, FlatList, Image } from 'react-native';
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
-import { ThemedText } from './ThemedText';
-import { CustomIcon } from './CustomIcon';
-import Animated, { 
-  useAnimatedStyle, 
-  useSharedValue, 
-  withTiming,
-  runOnJS
+import { useAuth } from '@/contexts/AuthContext';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { useThemeColor } from '@/hooks/useThemeColor';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
+import { Dimensions, FlatList, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import Animated, {
+    runOnJS,
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { useAuth } from '@/contexts/AuthContext';
+import { CustomIcon } from './CustomIcon';
+import { ThemedText } from './ThemedText';
 
 // Ajout de l'interface pour l'orientation
 interface Orientation {
@@ -40,14 +41,16 @@ const { width } = Dimensions.get('window');
 const NAVBAR_WIDTH = Math.min(280, width * 0.7);
 
 export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
+  // 1. Hooks de contexte et de navigation
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const router = useRouter();
   const { logout } = useAuth();
   const insets = useSafeAreaInsets();
+  const { colors: themeColors, styles: themeStyles } = useThemeColor();
+
+  // 2. Hooks d'état
   const [isRendered, setIsRendered] = useState(isVisible);
-  
-  // Gestion de l'orientation
   const [orientation, setOrientation] = useState<Orientation>(() => {
     const { width, height } = Dimensions.get('window');
     return {
@@ -57,7 +60,11 @@ export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
     };
   });
 
-  // Mettre à jour l'orientation quand les dimensions de l'écran changent
+  // 3. Hooks de référence
+  const isInitialRender = useRef(true);
+  const translateX = useSharedValue(isVisible ? 0 : NAVBAR_WIDTH);
+
+  // 4. Hooks d'effet
   useEffect(() => {
     const updateOrientation = () => {
       const { width, height } = Dimensions.get('window');
@@ -71,11 +78,7 @@ export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
     const subscription = Dimensions.addEventListener('change', updateOrientation);
     return () => subscription.remove();
   }, []);
-  
-  // Animation
-  const translateX = useSharedValue(isVisible ? 0 : NAVBAR_WIDTH);
-  const isInitialRender = useRef(true);
-  
+
   useEffect(() => {
     if (isInitialRender.current) {
       translateX.value = isVisible ? 0 : NAVBAR_WIDTH;
@@ -99,7 +102,8 @@ export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
       );
     }
   }, [isVisible, translateX]);
-  
+
+  // 5. Hooks d'animation
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
   }));
@@ -187,11 +191,6 @@ export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
     );
   };
 
-  // Si le composant ne doit pas être rendu, retourner null
-  if (!isRendered) {
-    return null;
-  }
-
   // Calculer les dimensions adaptatives pour le profil utilisateur
   const avatarSize = 40;
   const profilePadding = 8;
@@ -199,6 +198,11 @@ export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
   const userRoleSize = 11;
   const avatarMarginBottom = 0;
   const avatarMarginRight = 10;
+
+  // Si le composant ne doit pas être rendu, retourner null
+  if (!isRendered) {
+    return null;
+  }
 
   return (
     <View style={styles.container}>
@@ -211,7 +215,7 @@ export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
         style={[
           styles.navbar, 
           { 
-            backgroundColor: colors.background,
+            backgroundColor: themeColors.surface,
             paddingTop: insets.top || 40,
             width: NAVBAR_WIDTH,
           },
@@ -226,6 +230,7 @@ export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
             flexDirection: 'row',
             justifyContent: 'flex-start',
             alignItems: 'center',
+            borderBottomColor: themeColors.border
           }
         ]}>
           <View style={[
@@ -235,7 +240,8 @@ export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
               height: avatarSize, 
               borderRadius: avatarSize/2,
               marginBottom: avatarMarginBottom,
-              marginRight: avatarMarginRight
+              marginRight: avatarMarginRight,
+              backgroundColor: themeColors.card
             }
           ]}>
             <Image 
@@ -257,7 +263,7 @@ export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
             ]}>
               Jean Dupont
             </ThemedText>
-            <ThemedText style={[styles.userRole, { fontSize: userRoleSize }]}>
+            <ThemedText style={[styles.userRole, { fontSize: userRoleSize, color: themeColors.textSecondary }]}>
               Administrateur
             </ThemedText>
           </View>
@@ -299,7 +305,6 @@ const styles = StyleSheet.create({
   profileContainer: {
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   avatarContainer: {
     backgroundColor: '#F2F2F2',

@@ -1,23 +1,23 @@
-import React, { useState, useMemo } from 'react';
-import {
-  StyleSheet,
-  View,
-  TouchableOpacity,
-  FlatList,
-  TextInput,
-  ActivityIndicator,
-  RefreshControl,
-} from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { HeaderWithSidebars } from '@/components/HeaderWithSidebars';
 import { CustomIcon } from '@/components/CustomIcon';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { HeaderWithSidebars } from '@/components/HeaderWithSidebars';
+import { ThemedText } from '@/components/ThemedText';
+import ThemedView from '@/components/ThemedView';
 import { Colors } from '@/constants/Colors';
 import { useRestaurants } from '@/contexts/RestaurantContext';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { useStocks } from '@/hooks/useStocks';
 import { Stock } from '@/src/models';
 import { LinearGradient } from 'expo-linear-gradient';
+import React, { useMemo, useState } from 'react';
+import {
+    ActivityIndicator,
+    FlatList,
+    RefreshControl,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 type StockFilter = 'all' | 'alert' | 'rupture' | 'normal';
 
@@ -48,46 +48,47 @@ function StockCard({ stock, onPress }: StockCardProps) {
 
   return (
     <TouchableOpacity
-      style={styles.card}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <View style={styles.cardHeader}>
-        <View style={styles.titleContainer}>
-          <ThemedText style={styles.title} numberOfLines={1}>
-            {stock.ingredient.nom}
-          </ThemedText>
-          <View style={styles.statusContainer}>
-            <View style={[styles.statusDot, { backgroundColor: getGradientColors()[0] }]} />
-            <ThemedText style={styles.statusText}>{statusText}</ThemedText>
+      <ThemedView variant="card" style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={styles.titleContainer}>
+            <ThemedText style={styles.title} numberOfLines={1}>
+              {stock.ingredient.nom}
+            </ThemedText>
+            <View style={styles.statusContainer}>
+              <View style={[styles.statusDot, { backgroundColor: getGradientColors()[0] }]} />
+              <ThemedText style={styles.statusText}>{statusText}</ThemedText>
+            </View>
           </View>
+          <CustomIcon name="chevron-right" size={20} color={colors.primary} />
         </View>
-        <CustomIcon name="chevron-right" size={20} color={colors.primary} />
-      </View>
 
-      <View style={styles.cardContent}>
-        <View style={styles.infoRow}>
-          <ThemedText style={styles.label}>Quantité en stock:</ThemedText>
-          <ThemedText style={styles.value}>{stock.quantite_en_stock} {stock.ingredient.unite}</ThemedText>
-        </View>
-        <View style={styles.infoRow}>
-          <ThemedText style={styles.label}>Seuil d'alerte:</ThemedText>
-          <ThemedText style={styles.value}>{stock.seuil_alerte} {stock.ingredient.unite}</ThemedText>
-        </View>
-        <View style={styles.progressContainer}>
-          <ThemedText style={styles.label}>Utilisation:</ThemedText>
-          <View style={styles.progressBarContainer}>
-            <LinearGradient
-              colors={getGradientColors()}
-              style={[
-                styles.progressBar,
-                { width: `${Math.min(Math.max(pourcentageUtilisation, 0), 100)}%` }
-              ]}
-            />
+        <View style={styles.cardContent}>
+          <View style={styles.infoRow}>
+            <ThemedText style={styles.label}>Quantité en stock:</ThemedText>
+            <ThemedText style={styles.value}>{stock.quantite_en_stock} {stock.ingredient.unite}</ThemedText>
           </View>
-          <ThemedText style={styles.percentageText}>{pourcentageUtilisation}%</ThemedText>
+          <View style={styles.infoRow}>
+            <ThemedText style={styles.label}>Seuil d'alerte:</ThemedText>
+            <ThemedText style={styles.value}>{stock.seuil_alerte} {stock.ingredient.unite}</ThemedText>
+          </View>
+          <View style={styles.progressContainer}>
+            <ThemedText style={styles.label}>Utilisation:</ThemedText>
+            <View style={styles.progressBarContainer}>
+              <LinearGradient
+                colors={getGradientColors()}
+                style={[
+                  styles.progressBar,
+                  { width: `${Math.min(Math.max(pourcentageUtilisation, 0), 100)}%` }
+                ]}
+              />
+            </View>
+            <ThemedText style={styles.percentageText}>{pourcentageUtilisation}%</ThemedText>
+          </View>
         </View>
-      </View>
+      </ThemedView>
     </TouchableOpacity>
   );
 }
@@ -139,24 +140,31 @@ export default function StocksScreen() {
     });
   }, [stocks, searchQuery, activeFilter]);
 
-  const FilterButton = ({ filter, label }: { filter: StockFilter; label: string }) => (
-    <TouchableOpacity
-      style={[
-        styles.filterButton,
-        activeFilter === filter && styles.filterButtonActive
-      ]}
-      onPress={() => setActiveFilter(filter)}
-    >
-      <ThemedText
+  const FilterButton = ({ filter, label }: { filter: StockFilter; label: string }) => {
+    const colorScheme = useColorScheme();
+    const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+    
+    return (
+      <TouchableOpacity
         style={[
-          styles.filterButtonText,
-          activeFilter === filter && styles.filterButtonTextActive
+          styles.filterButton,
+          { backgroundColor: colors.surface },
+          activeFilter === filter && styles.filterButtonActive
         ]}
+        onPress={() => setActiveFilter(filter)}
       >
-        {label}
-      </ThemedText>
-    </TouchableOpacity>
-  );
+        <ThemedText
+          style={[
+            styles.filterButtonText,
+            { color: colors.text + '80' },
+            activeFilter === filter && styles.filterButtonTextActive
+          ]}
+        >
+          {label}
+        </ThemedText>
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
@@ -190,7 +198,7 @@ export default function StocksScreen() {
       
       <View style={styles.headerContainer}>
         <View style={styles.searchContainer}>
-          <View style={styles.searchInputContainer}>
+          <View style={[styles.searchInputContainer, { backgroundColor: colors.surface }]}>
             <CustomIcon name="view-dashboard" size={20} color={colors.text + '80'} style={styles.searchIcon} />
             <TextInput
               style={[styles.searchInput, { color: colors.text }]}
@@ -211,7 +219,7 @@ export default function StocksScreen() {
         </View>
         <TouchableOpacity 
           onPress={handleRefresh}
-          style={styles.refreshButton}
+          style={[styles.refreshButton, { backgroundColor: colors.surface }]}
           disabled={isRefreshing}
         >
           <CustomIcon 
@@ -289,7 +297,6 @@ const styles = StyleSheet.create({
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F6F5F8',
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 44,
@@ -315,14 +322,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#F6F5F8',
   },
   filterButtonActive: {
     backgroundColor: '#F27E42',
   },
   filterButtonText: {
     fontSize: 14,
-    color: '#666',
   },
   filterButtonTextActive: {
     color: '#FFF',
@@ -333,15 +338,14 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   card: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    marginBottom: 16,
+    borderRadius: 12,
     padding: 16,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 3,
   },
   cardHeader: {
     flexDirection: 'row',

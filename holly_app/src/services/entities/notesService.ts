@@ -1,5 +1,5 @@
 import { Note } from '@/src/models';
-import apiClient from '../api';
+import apiClient from '../utils/api';
 const BASE_PATH = '/notes';
 
 export const getNotesByIdRestaurant = async (id: number) => {

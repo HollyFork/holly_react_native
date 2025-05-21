@@ -1,6 +1,6 @@
-import apiClient, { resetCsrfToken } from '../api';
 import { User } from '@/src/models';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import apiClient from '../utils/api';
 
 interface LoginCredentials {
   username: string;
@@ -28,9 +28,6 @@ export const authService = {
    */
   login: async (credentials: LoginCredentials) => {
     try {
-      // S'assurer qu'un token CSRF valide est disponible avant de tenter la connexion
-      await resetCsrfToken();
-      
       // Effectuer la requête de connexion
       console.log('Tentative de connexion avec les identifiants fournis...');
       const response = await apiClient.post<LoginResponse>('/auth/login/', credentials);
@@ -89,6 +86,15 @@ export const authService = {
     }
   },
 
+  isAuthenticatedBis: async (): Promise<boolean> => {
+    try {
+      return false;
+    } catch (error) {
+      console.error('Erreur lors de la vérification de l\'authentification:', error);
+      return false;
+    }
+  },
+      
   /**
    * Récupère l'utilisateur actuellement connecté
    */

@@ -1,5 +1,5 @@
 import { Reservation } from '../../../src/models';
-import apiClient from '../api';
+import apiClient from '../utils/api';
 
 const BASE_PATH = '/reservations';
 

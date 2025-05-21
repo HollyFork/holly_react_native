@@ -1,21 +1,48 @@
+import { PortalProvider } from '@gorhom/portal';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { ActivityIndicator } from 'react-native';
 import 'react-native-reanimated';
-import { useState, useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
-import { PortalProvider } from '@gorhom/portal';
 
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/Colors';
-import { ThemedView } from '@/components/ThemedView';
+import ThemedView from '@/components/ThemedView';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { RestaurantProvider } from '@/contexts/RestaurantContext';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { useThemeColor } from '@/hooks/useThemeColor';
+import { FloatingMenu } from '../src/components/FloatingMenu';
+
+// Composant séparé pour le menu flottant
+const FloatingMenuWithAuth = () => {
+  const router = useRouter();
+  const { logout } = useAuth();
+
+  const menuItems = [
+    {
+      icon: 'restaurant',
+      label: 'Restaurants',
+      onPress: () => router.push('/(tabs)/explore'),
+    },
+    {
+      icon: 'inventory',
+      label: 'Stocks',
+      onPress: () => router.push('/(tabs)/stocks'),
+    },
+    {
+      icon: 'logout',
+      label: 'Déconnexion',
+      onPress: async () => {
+        await logout();
+        router.push('/auth/login');
+      },
+    },
+  ];
+
+  return <FloatingMenu items={menuItems} />;
+};
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+  const { colors, isDark } = useThemeColor();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
@@ -23,29 +50,36 @@ export default function RootLayout() {
   // Attendre le chargement des polices
   if (!loaded) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#F27E42" />
-      </View>
+      <ThemedView variant="background" style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </ThemedView>
     );
   }
 
   return (
-    <AuthProvider>
-      <PortalProvider>
-        <RestaurantProvider>
-          <ThemedView style={{ flex: 1, backgroundColor: colors.background }}>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-              }}
-            >
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="auth" options={{ headerShown: false }} />
-            </Stack>
-          </ThemedView>
-        </RestaurantProvider>
-      </PortalProvider>
-    </AuthProvider>
+    <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+      <AuthProvider>
+        <PortalProvider>
+          <RestaurantProvider>
+            <ThemedView variant="background" style={{ flex: 1 }}>
+              <StatusBar style={isDark ? 'light' : 'dark'} />
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: {
+                    backgroundColor: colors.background,
+                  },
+                }}
+              >
+                <Stack.Screen name="index" />
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="auth" options={{ headerShown: false }} />
+              </Stack>
+              <FloatingMenuWithAuth />
+            </ThemedView>
+          </RestaurantProvider>
+        </PortalProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

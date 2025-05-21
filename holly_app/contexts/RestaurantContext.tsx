@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Restaurant } from '@/src/models';
-import { restaurantService } from '@/src/services';
+import { restaurantService } from '@/src/services/entities/restaurantService';
 import { AxiosResponse } from 'axios';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 
 interface RestaurantContextType {

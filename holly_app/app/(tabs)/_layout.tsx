@@ -1,56 +1,57 @@
+import ThemedView from '@/components/ThemedView';
+import { useThemeColor } from '@/hooks/useThemeColor';
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function AppLayout() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+  const { colors, isDark } = useThemeColor();
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: { display: 'none' },
-        animation: 'none',
-      }}
-    >
-      <Tabs.Screen 
-        name="dashboard"
-        options={{
-          href: null,
+    <ThemedView variant="background" style={{ flex: 1 }}>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarStyle: { display: 'none' },
+          animation: 'none',
         }}
-      />
-      <Tabs.Screen 
-        name="explore"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen 
-        name="reservations"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen 
-        name="commandes"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen 
-        name="stocks"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen 
-        name="notes"
-        options={{
-          href: null,
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen 
+          name="dashboard"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen 
+          name="explore"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen 
+          name="reservations"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen 
+          name="commandes"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen 
+          name="stocks"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen 
+          name="notes"
+          options={{
+            href: null,
+          }}
+        />
+      </Tabs>
+    </ThemedView>
   );
 }

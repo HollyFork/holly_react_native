@@ -1,41 +1,67 @@
-import React from 'react';
-import { TextInput, StyleSheet, View, TextInputProps, ViewStyle, StyleProp } from 'react-native';
+import { useThemeColor } from '@/hooks/useThemeColor';
+import React, { useState } from 'react';
+import { StyleProp, StyleSheet, TextInput, TextInputProps, View, ViewStyle } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
-interface AnimatedInputProps extends TextInputProps {
+interface AnimatedInputProps extends Omit<TextInputProps, 'style'> {
   containerStyle?: StyleProp<ViewStyle>;
-  bubbleColor?: string;
 }
 
-const AnimatedInput: React.FC<AnimatedInputProps> = ({
+export default function AnimatedInput({ 
+  value, 
+  onChangeText, 
+  placeholder, 
+  secureTextEntry,
   containerStyle,
-  bubbleColor = 'rgba(255, 255, 255, 0.3)',
-  style,
-  ...props
-}) => {
-  const renderBubble = (index: number) => (
-    <View
-      key={index}
-      style={[
-        styles.bubble,
-        {
-          backgroundColor: bubbleColor,
-          opacity: 0.4,
-          left: `${20 + index * 30}%`,
-        },
-      ]}
-    />
-  );
+  ...props 
+}: AnimatedInputProps) {
+  const { colors } = useThemeColor();
+  const [isFocused, setIsFocused] = useState(false);
+  const scale = useSharedValue(0);
+
+  const bubbleAnim = useAnimatedStyle(() => {
+    return {
+      transform: [{ 
+        scale: withSpring(isFocused ? 1 : 0, {
+          damping: 10,
+          stiffness: 100,
+        })
+      }]
+    };
+  });
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {[0, 1, 2].map((index) => renderBubble(index))}
       <TextInput
-        style={[styles.input, style]}
+        style={[
+          styles.input,
+          {
+            backgroundColor: colors.surface,
+            borderColor: isFocused ? colors.primary : colors.border,
+            color: colors.text,
+          }
+        ]}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={colors.textSecondary}
+        secureTextEntry={secureTextEntry}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
         {...props}
+      />
+      <Animated.View
+        style={[
+          styles.bubble,
+          {
+            backgroundColor: colors.primary,
+          },
+          bubbleAnim
+        ]}
       />
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -49,7 +75,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 16,
     borderWidth: 1,
-    backgroundColor: 'rgba(245, 245, 245, 0.8)',
     zIndex: 1,
   },
   bubble: {
@@ -59,7 +84,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     zIndex: 0,
     bottom: 8,
+    left: 16,
   },
-});
-
-export default AnimatedInput; 
+}); 

@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, RefreshControl, TouchableOpacity, TextInput } from 'react-native';
-import { useNotes } from '@/hooks/useNotes'; // Correction du chemin d'importation
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { Note } from '@/src/models'; // Correction du chemin d'importation
-import { Colors } from '@/constants/Colors'; // Assurez-vous que ce chemin est correct
-import { useColorScheme } from '@/hooks/useColorScheme'; // Assurez-vous que ce chemin est correct
-import { HeaderWithSidebars } from '@/components/HeaderWithSidebars'; // Ajout de l'import
-import { useRestaurants } from '@/contexts/RestaurantContext'; // Ajout de l'import
 import { CustomIcon } from '@/components/CustomIcon'; // Ajout pour l'écran d'erreur
+import { HeaderWithSidebars } from '@/components/HeaderWithSidebars'; // Ajout de l'import
+import { ThemedText } from '@/components/ThemedText';
+import ThemedView from '@/components/ThemedView';
+import { Colors } from '@/constants/Colors'; // Assurez-vous que ce chemin est correct
+import { useRestaurants } from '@/contexts/RestaurantContext'; // Ajout de l'import
+import { useColorScheme } from '@/hooks/useColorScheme'; // Assurez-vous que ce chemin est correct
+import { useNotes } from '@/hooks/useNotes'; // Correction du chemin d'importation
+import { Note } from '@/src/models'; // Correction du chemin d'importation
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
 // ID du restaurant (à remplacer par la logique appropriée pour obtenir l'ID dynamiquement)
 // const RESTAURANT_ID = 1; // Commenté car nous utiliserons selectedRestaurant.id_restaurant

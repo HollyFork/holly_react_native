@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
 import { Reservation } from '@/src/models';
-import { reservationService } from '@/src/services';
+import { reservationService } from '@/src/services/entities/reservationService';
+import { useEffect, useRef, useState } from 'react';
 
 // Cache pour stocker les réservations par restaurant
 const reservationsCache = new Map<number, {

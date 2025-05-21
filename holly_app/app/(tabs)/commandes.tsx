@@ -1,18 +1,18 @@
-import React, { useState, useMemo } from 'react';
-import { StyleSheet, View, TouchableOpacity, FlatList, TextInput, ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useCommandes } from '@/hooks/useCommandes';
-import { useRestaurants } from '@/contexts/RestaurantContext';
-import { Commande } from '@/src/models';
-import { ThemedView } from '@/components/ThemedView';
-import { ThemedText } from '@/components/ThemedText';
 import { CustomIcon } from '@/components/CustomIcon';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { HeaderWithSidebars } from '@/components/HeaderWithSidebars';
+import StatsCards, { StatItem } from '@/components/StatsCards';
+import { ThemedText } from '@/components/ThemedText';
+import ThemedView from '@/components/ThemedView';
 import { Colors } from '@/constants/Colors';
+import { useRestaurants } from '@/contexts/RestaurantContext';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { useCommandes } from '@/hooks/useCommandes';
+import { Commande } from '@/src/models';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { HeaderWithSidebars } from '@/components/HeaderWithSidebars';
-import { StatsCards, StatItem } from '@/components/StatsCards';
+import { useRouter } from 'expo-router';
+import React, { useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, RefreshControl, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
 type CommandeFilter = 'all' | 'EN_COURS' | 'VALIDEE' | 'ANNULEE';
 
@@ -49,47 +49,48 @@ function CommandeCard({ commande, onPress }: CommandeCardProps) {
 
   return (
     <TouchableOpacity
-      style={styles.card}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <View style={styles.cardHeader}>
-        <View style={styles.titleContainer}>
-          <ThemedText style={styles.title}>
-            Commande #{commande.id}
-          </ThemedText>
-          <View style={styles.statusContainer}>
-            <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
-            <ThemedText style={styles.statusText}>{getStatusText()}</ThemedText>
+      <ThemedView variant="card" style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={styles.titleContainer}>
+            <ThemedText style={styles.title}>
+              Commande #{commande.id}
+            </ThemedText>
+            <View style={styles.statusContainer}>
+              <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
+              <ThemedText style={styles.statusText}>{getStatusText()}</ThemedText>
+            </View>
           </View>
+          <CustomIcon name="chevron-right" size={20} color={colors.primary} />
         </View>
-        <CustomIcon name="chevron-right" size={20} color={colors.primary} />
-      </View>
 
-      <View style={styles.cardContent}>
-        <View style={styles.infoRow}>
-          <ThemedText style={styles.label}>Date:</ThemedText>
-          <ThemedText style={styles.value}>{formatDate(commande.created_at)}</ThemedText>
-        </View>
-        <View style={styles.infoRow}>
-          <ThemedText style={styles.label}>Montant:</ThemedText>
-          <ThemedText style={styles.value}>
-            {Number(commande.montant || 0).toFixed(2)} €
-          </ThemedText>
-        </View>
-        <View style={styles.infoRow}>
-          <ThemedText style={styles.label}>Articles:</ThemedText>
-          <ThemedText style={styles.value}>
-            {Number(commande.nb_articles || 0)} articles
-          </ThemedText>
-        </View>
-        {commande.table && (
+        <View style={styles.cardContent}>
           <View style={styles.infoRow}>
-            <ThemedText style={styles.label}>Table:</ThemedText>
-            <ThemedText style={styles.value}>Table {commande.table.numero}</ThemedText>
+            <ThemedText style={styles.label}>Date:</ThemedText>
+            <ThemedText style={styles.value}>{formatDate(commande.created_at)}</ThemedText>
           </View>
-        )}
-      </View>
+          <View style={styles.infoRow}>
+            <ThemedText style={styles.label}>Montant:</ThemedText>
+            <ThemedText style={styles.value}>
+              {Number(commande.montant || 0).toFixed(2)} €
+            </ThemedText>
+          </View>
+          <View style={styles.infoRow}>
+            <ThemedText style={styles.label}>Articles:</ThemedText>
+            <ThemedText style={styles.value}>
+              {Number(commande.nb_articles || 0)} articles
+            </ThemedText>
+          </View>
+          {commande.table && (
+            <View style={styles.infoRow}>
+              <ThemedText style={styles.label}>Table:</ThemedText>
+              <ThemedText style={styles.value}>Table {commande.table.numero}</ThemedText>
+            </View>
+          )}
+        </View>
+      </ThemedView>
     </TouchableOpacity>
   );
 }
@@ -376,8 +377,8 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   card: {
-    backgroundColor: 'white',
     borderRadius: 12,
+    padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

@@ -1,18 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { HeaderWithSidebars } from '@/components/HeaderWithSidebars';
 import { CustomIcon } from '@/components/CustomIcon';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/Colors';
+import { HeaderWithSidebars } from '@/components/HeaderWithSidebars';
+import { ThemedText } from '@/components/ThemedText';
+import ThemedView from '@/components/ThemedView';
 import { useRestaurants } from '@/contexts/RestaurantContext';
-import { useReservations } from '@/hooks/useReservations';
-import { useNotes } from '@/hooks/useNotes';
 import { useCommandes } from '@/hooks/useCommandes';
+import { useNotes } from '@/hooks/useNotes';
+import { useReservations } from '@/hooks/useReservations';
 import { useStocks } from '@/hooks/useStocks';
-import { router } from 'expo-router';
+import { useThemeColor } from '@/hooks/useThemeColor';
 import { FontAwesome } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface DashboardCardV2Props {
   icon: string;
@@ -23,11 +22,15 @@ interface DashboardCardV2Props {
 }
 
 function DashboardCardV2({ icon, title, value, subtitle, onPress }: DashboardCardV2Props) {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+  const { colors, styles: themeStyles } = useThemeColor();
+  
   return (
     <TouchableOpacity
-      style={stylesV2.card}
+      style={[
+        stylesV2.card,
+        themeStyles.card,
+        { backgroundColor: colors.card }
+      ]}
       activeOpacity={0.8}
       onPress={onPress}
     >
@@ -38,25 +41,30 @@ function DashboardCardV2({ icon, title, value, subtitle, onPress }: DashboardCar
           <CustomIcon name="chevron-right" size={20} color={colors.primary} />
         </View>
       </View>
-      <View style={stylesV2.separator} />
+      <View style={[stylesV2.separator, { backgroundColor: colors.border }]} />
       <View style={stylesV2.valueContainer}>
         <ThemedText
-          style={stylesV2.value}
+          style={[stylesV2.value, { color: colors.primary }]}
           numberOfLines={1}
           adjustsFontSizeToFit
           minimumFontScale={0.5}
         >
           {value}
         </ThemedText>
-        {subtitle && <ThemedText style={stylesV2.subtitle}>{subtitle}</ThemedText>}
+        {subtitle && (
+          <ThemedText 
+            style={[stylesV2.subtitle, { color: colors.textSecondary }]}
+          >
+            {subtitle}
+          </ThemedText>
+        )}
       </View>
     </TouchableOpacity>
   );
 }
 
 export default function DashboardScreen() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+  const { colors, isDark } = useThemeColor();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
   const [allDataReady, setAllDataReady] = useState(false);
@@ -234,12 +242,12 @@ export default function DashboardScreen() {
   const stocksEnAlerte = stocks ? stocks.filter(stock => stock.quantite_en_stock <= stock.seuil_alerte).length : 0;
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView variant="background" style={styles.container}>
       <HeaderWithSidebars restaurantName={selectedRestaurant.nom_restaurant} />
       
       {/* Contenu principal */}
       <ScrollView 
-        style={stylesV2.content}
+        style={[stylesV2.content, { backgroundColor: colors.background }]}
         contentContainerStyle={stylesV2.contentContainer}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -263,7 +271,7 @@ export default function DashboardScreen() {
             <CustomIcon 
               name="refresh" 
               size={24} 
-              color={isRefreshing ? colors.text + '80' : colors.primary} 
+              color={isRefreshing ? colors.textSecondary : colors.primary} 
             />
           </TouchableOpacity>
         </View>
@@ -442,7 +450,6 @@ const styles = StyleSheet.create({
 const stylesV2 = StyleSheet.create({
   content: {
     flex: 1,
-    backgroundColor: '#F6F5F8',
   },
   contentContainer: {
     padding: 18,
@@ -458,14 +465,12 @@ const stylesV2 = StyleSheet.create({
   mainTitle: {
     fontSize: 30,
     fontWeight: 'bold',
-    color: '#111',
   },
   refreshButton: {
     padding: 8,
     borderRadius: 20,
   },
   card: {
-    backgroundColor: '#fff',
     borderRadius: 18,
     marginBottom: 22,
     paddingHorizontal: 20,
@@ -487,7 +492,6 @@ const stylesV2 = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#222',
     flex: 1,
   },
   chevronContainer: {
@@ -497,7 +501,6 @@ const stylesV2 = StyleSheet.create({
   },
   separator: {
     height: 1,
-    backgroundColor: '#ECECEC',
     marginBottom: 12,
   },
   valueContainer: {
@@ -510,7 +513,6 @@ const stylesV2 = StyleSheet.create({
   value: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#F27E42',
     marginBottom: 2,
     textAlign: 'center',
     flexShrink: 1,
@@ -518,7 +520,6 @@ const stylesV2 = StyleSheet.create({
   },
   subtitle: {
     fontSize: 15,
-    color: '#A0A0A0',
     marginTop: 6,
     textAlign: 'center',
   },

@@ -1,5 +1,6 @@
+import { useThemeColor } from '@/hooks/useThemeColor';
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { ThemedText } from './ThemedText';
 
 export interface StatItem {
@@ -11,13 +12,23 @@ interface StatsCardsProps {
   stats: StatItem[];
 }
 
-export function StatsCards({ stats }: StatsCardsProps) {
+export default function StatsCards({ stats }: StatsCardsProps) {
+  const { colors } = useThemeColor();
+
   return (
     <View style={styles.container}>
       {stats.map((stat, index) => (
-        <View key={index} style={styles.statCard}>
-          <ThemedText style={styles.statValue}>{stat.value}</ThemedText>
-          <ThemedText style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit>
+        <View 
+          key={index} 
+          style={[
+            styles.statCard,
+            { backgroundColor: colors.surface }
+          ]}
+        >
+          <ThemedText style={[styles.statValue, { color: colors.primary }]}>
+            {stat.value}
+          </ThemedText>
+          <ThemedText style={[styles.statLabel, { color: colors.textSecondary }]}>
             {stat.label}
           </ThemedText>
         </View>
@@ -36,7 +47,6 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: 70,
-    backgroundColor: 'rgba(142, 142, 147, 0.12)',
     borderRadius: 12,
     padding: 12,
     alignItems: 'center',
@@ -48,7 +58,6 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 11,
-    opacity: 0.8,
     textAlign: 'center',
     width: '100%',
   },

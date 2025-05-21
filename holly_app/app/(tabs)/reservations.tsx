@@ -1,27 +1,27 @@
-import React, { useState, useMemo } from 'react';
-import {
-  StyleSheet,
-  View,
-  TouchableOpacity,
-  FlatList,
-  TextInput,
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { HeaderWithSidebars } from '@/components/HeaderWithSidebars';
 import { CustomIcon } from '@/components/CustomIcon';
-import { StatsCards, StatItem } from '@/components/StatsCards';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { HeaderWithSidebars } from '@/components/HeaderWithSidebars';
+import StatsCards, { StatItem } from '@/components/StatsCards';
+import { ThemedText } from '@/components/ThemedText';
+import ThemedView from '@/components/ThemedView';
 import { Colors } from '@/constants/Colors';
 import { useRestaurants } from '@/contexts/RestaurantContext';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { useReservations } from '@/hooks/useReservations';
 import { Reservation } from '@/src/models';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useRouter } from 'expo-router';
+import React, { useMemo, useState } from 'react';
+import {
+    ActivityIndicator,
+    FlatList,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 type ReservationFilter = 'all' | 'today' | 'upcoming' | 'past';
 
@@ -58,41 +58,42 @@ function ReservationCard({ reservation, onPress }: ReservationCardProps) {
 
   return (
     <TouchableOpacity
-      style={styles.card}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <View style={styles.cardHeader}>
-        <View style={styles.titleContainer}>
-          <ThemedText style={styles.title} numberOfLines={1}>
-            {reservation.nom_client}
-          </ThemedText>
-          <View style={styles.statusContainer}>
-            <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
-            <ThemedText style={styles.statusText}>{getStatusText()}</ThemedText>
+      <ThemedView variant="card" style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={styles.titleContainer}>
+            <ThemedText style={styles.title} numberOfLines={1}>
+              {reservation.nom_client}
+            </ThemedText>
+            <View style={styles.statusContainer}>
+              <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
+              <ThemedText style={styles.statusText}>{getStatusText()}</ThemedText>
+            </View>
+          </View>
+          <CustomIcon name="chevron-right" size={20} color={colors.primary} />
+        </View>
+
+        <View style={styles.cardContent}>
+          <View style={styles.infoRow}>
+            <ThemedText style={styles.label}>Date:</ThemedText>
+            <ThemedText style={styles.value}>{formatDate(reservation.date_heure)}</ThemedText>
+          </View>
+          <View style={styles.infoRow}>
+            <ThemedText style={styles.label}>Personnes:</ThemedText>
+            <ThemedText style={styles.value}>{reservation.nombre_personnes} personnes</ThemedText>
+          </View>
+          <View style={styles.infoRow}>
+            <ThemedText style={styles.label}>Téléphone:</ThemedText>
+            <ThemedText style={styles.value}>{reservation.telephone}</ThemedText>
+          </View>
+          <View style={styles.infoRow}>
+            <ThemedText style={styles.label}>Salle:</ThemedText>
+            <ThemedText style={styles.value}>{reservation.salle.nom_salle}</ThemedText>
           </View>
         </View>
-        <CustomIcon name="chevron-right" size={20} color={colors.primary} />
-      </View>
-
-      <View style={styles.cardContent}>
-        <View style={styles.infoRow}>
-          <ThemedText style={styles.label}>Date:</ThemedText>
-          <ThemedText style={styles.value}>{formatDate(reservation.date_heure)}</ThemedText>
-        </View>
-        <View style={styles.infoRow}>
-          <ThemedText style={styles.label}>Personnes:</ThemedText>
-          <ThemedText style={styles.value}>{reservation.nombre_personnes} personnes</ThemedText>
-        </View>
-        <View style={styles.infoRow}>
-          <ThemedText style={styles.label}>Téléphone:</ThemedText>
-          <ThemedText style={styles.value}>{reservation.telephone}</ThemedText>
-        </View>
-        <View style={styles.infoRow}>
-          <ThemedText style={styles.label}>Salle:</ThemedText>
-          <ThemedText style={styles.value}>{reservation.salle.nom_salle}</ThemedText>
-        </View>
-      </View>
+      </ThemedView>
     </TouchableOpacity>
   );
 }
@@ -409,8 +410,8 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   card: {
-    backgroundColor: 'white',
     borderRadius: 12,
+    padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

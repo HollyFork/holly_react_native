@@ -5,7 +5,8 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 export type ThemedTextProps = TextProps & {
   lightColor?: string;
   darkColor?: string;
-  type?: 'default' | 'title' | 'defaultSemiBold' | 'subtitle' | 'link';
+  type?: 'default' | 'title' | 'defaultSemiBold' | 'subtitle' | 'link' | 'secondary';
+  variant?: 'default' | 'primary' | 'secondary' | 'error' | 'success' | 'warning' | 'info';
 };
 
 export function ThemedText({
@@ -13,14 +14,42 @@ export function ThemedText({
   lightColor,
   darkColor,
   type = 'default',
+  variant = 'default',
   ...rest
 }: ThemedTextProps) {
-  const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
+  const { colors, styles: themeStyles } = useThemeColor(
+    { light: lightColor, dark: darkColor },
+    variant === 'primary' ? 'primary' :
+    variant === 'secondary' ? 'secondary' :
+    variant === 'error' ? 'error' :
+    variant === 'success' ? 'success' :
+    variant === 'warning' ? 'warning' :
+    variant === 'info' ? 'info' : 'text'
+  );
+
+  const getVariantStyle = () => {
+    switch (variant) {
+      case 'primary':
+        return { color: colors.primary };
+      case 'secondary':
+        return themeStyles.textSecondary;
+      case 'error':
+        return { color: colors.error };
+      case 'success':
+        return { color: colors.success };
+      case 'warning':
+        return { color: colors.warning };
+      case 'info':
+        return { color: colors.info };
+      default:
+        return themeStyles.text;
+    }
+  };
 
   return (
     <Text
       style={[
-        { color },
+        getVariantStyle(),
         type === 'default' ? styles.default : undefined,
         type === 'title' ? styles.title : undefined,
         type === 'defaultSemiBold' ? styles.defaultSemiBold : undefined,
@@ -55,6 +84,6 @@ const styles = StyleSheet.create({
   link: {
     lineHeight: 30,
     fontSize: 16,
-    color: '#0a7ea4',
+    textDecorationLine: 'underline',
   },
 });
