@@ -31,9 +31,9 @@ function CommandeCard({ commande, onPress }: CommandeCardProps) {
   
   const getStatusColor = () => {
     switch (commande.statut) {
-      case 'EN_COURS': return '#FFA500'; // Orange
-      case 'VALIDEE': return '#4CAF50'; // Vert
-      case 'ANNULEE': return '#FF4B4B'; // Rouge
+      case 'EN_COURS': return colors.warning;
+      case 'VALIDEE': return colors.success;
+      case 'ANNULEE': return colors.error;
       default: return colors.primary;
     }
   };
@@ -49,18 +49,20 @@ function CommandeCard({ commande, onPress }: CommandeCardProps) {
 
   return (
     <TouchableOpacity
-      style={styles.card}
+      style={[styles.card, { backgroundColor: colors.surface }]}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <View style={styles.cardHeader}>
+      <View style={[styles.cardHeader, { borderBottomColor: colors.border }]}>
         <View style={styles.titleContainer}>
-          <ThemedText style={styles.title}>
+          <ThemedText style={[styles.title, { color: colors.text }]}>
             Commande #{commande.id}
           </ThemedText>
           <View style={styles.statusContainer}>
             <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
-            <ThemedText style={styles.statusText}>{getStatusText()}</ThemedText>
+            <ThemedText style={[styles.statusText, { color: getStatusColor() }]}>
+              {getStatusText()}
+            </ThemedText>
           </View>
         </View>
         <CustomIcon name="chevron-right" size={20} color={colors.primary} />
@@ -68,25 +70,25 @@ function CommandeCard({ commande, onPress }: CommandeCardProps) {
 
       <View style={styles.cardContent}>
         <View style={styles.infoRow}>
-          <ThemedText style={styles.label}>Date:</ThemedText>
-          <ThemedText style={styles.value}>{formatDate(commande.created_at)}</ThemedText>
+          <ThemedText style={[styles.label, { color: colors.textSecondary }]}>Date:</ThemedText>
+          <ThemedText style={[styles.value, { color: colors.text }]}>{formatDate(commande.created_at)}</ThemedText>
         </View>
         <View style={styles.infoRow}>
-          <ThemedText style={styles.label}>Montant:</ThemedText>
-          <ThemedText style={styles.value}>
+          <ThemedText style={[styles.label, { color: colors.textSecondary }]}>Montant:</ThemedText>
+          <ThemedText style={[styles.value, { color: colors.primary, fontWeight: '600' }]}>
             {Number(commande.montant || 0).toFixed(2)} €
           </ThemedText>
         </View>
         <View style={styles.infoRow}>
-          <ThemedText style={styles.label}>Articles:</ThemedText>
-          <ThemedText style={styles.value}>
+          <ThemedText style={[styles.label, { color: colors.textSecondary }]}>Articles:</ThemedText>
+          <ThemedText style={[styles.value, { color: colors.text }]}>
             {Number(commande.nb_articles || 0)} articles
           </ThemedText>
         </View>
         {commande.table && (
           <View style={styles.infoRow}>
-            <ThemedText style={styles.label}>Table:</ThemedText>
-            <ThemedText style={styles.value}>Table {commande.table.numero}</ThemedText>
+            <ThemedText style={[styles.label, { color: colors.textSecondary }]}>Table:</ThemedText>
+            <ThemedText style={[styles.value, { color: colors.text }]}>Table {commande.table.numero}</ThemedText>
           </View>
         )}
       </View>
@@ -376,14 +378,14 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   card: {
-    backgroundColor: 'white',
     borderRadius: 12,
-    marginBottom: 12,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -391,13 +393,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(142, 142, 147, 0.12)',
   },
   titleContainer: {
     flex: 1,
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
   },
   title: {
     fontSize: 16,
@@ -406,16 +407,17 @@ const styles = StyleSheet.create({
   statusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    marginLeft: 12,
   },
   statusDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
+    marginRight: 6,
   },
   statusText: {
-    fontSize: 12,
-    opacity: 0.8,
+    fontSize: 14,
+    fontWeight: '500',
   },
   cardContent: {
     padding: 16,
@@ -423,15 +425,14 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
   },
   label: {
     fontSize: 14,
-    opacity: 0.6,
   },
   value: {
     fontSize: 14,
-    fontWeight: '500',
   },
   emptyContainer: {
     alignItems: 'center',

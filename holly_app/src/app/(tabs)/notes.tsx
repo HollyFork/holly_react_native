@@ -60,10 +60,27 @@ export default function NotesScreen() {
   }, [notes, searchQuery]);
 
   const renderNoteItem = ({ item }: { item: Note }) => (
-    <View style={[styles.card, { backgroundColor: colors.background, borderColor: colors.icon }]}>
-      <View style={styles.cardHeader}>
-        <ThemedText type="subtitle" style={{ color: colors.text }}>{item.created_by.prenom} {item.created_by.nom}</ThemedText>
-        <ThemedText style={[styles.dateText, { color: colors.icon }]}>{new Date(item.created_at).toLocaleDateString()}</ThemedText>
+    <View style={[styles.card, { 
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+      shadowColor: colors.text
+    }]}>
+      <View style={[styles.cardHeader, { borderBottomColor: colors.border }]}>
+        <View style={styles.authorContainer}>
+          <CustomIcon name="account-group" size={20} color={colors.icon} style={styles.authorIcon} />
+          <ThemedText style={[styles.authorText, { color: colors.text }]}>
+            {item.created_by.prenom} {item.created_by.nom}
+          </ThemedText>
+        </View>
+        <ThemedText style={[styles.dateText, { color: colors.textSecondary }]}>
+          {new Date(item.created_at).toLocaleDateString('fr-FR', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}
+        </ThemedText>
       </View>
       <ThemedText style={[styles.messageText, { color: colors.text }]}>{item.message}</ThemedText>
     </View>
@@ -99,21 +116,27 @@ export default function NotesScreen() {
     <>
       <HeaderWithSidebars restaurantName={selectedRestaurant?.nom_restaurant || "Notes"} />
       <ThemedView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.headerControlsContainer, { borderBottomColor: colors.icon }]}>
+        <View style={[styles.headerControlsContainer, { 
+          backgroundColor: colors.surface,
+          borderBottomColor: colors.border 
+        }]}>
           <View style={styles.searchContainer}>
-            <View style={[styles.searchInputContainer, { backgroundColor: colors.background === '#fff' ? '#F0F0F0' : '#2C2C2E'}]}>
+            <View style={[styles.searchInputContainer, { 
+              backgroundColor: colors.background,
+              borderColor: colors.border
+            }]}>
               <CustomIcon name="account-group" size={20} color={colors.icon} style={styles.searchIcon} /> 
               <TextInput
                 style={[styles.searchInput, { color: colors.text }]}
                 placeholder="Rechercher une note (auteur, message)..."
-                placeholderTextColor={colors.icon}
+                placeholderTextColor={colors.textSecondary}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity
                   onPress={() => setSearchQuery('')}
-                  style={styles.clearButton}
+                  style={[styles.clearButton, { backgroundColor: colors.background }]}
                 >
                   <CustomIcon name="close" size={20} color={colors.icon} />
                 </TouchableOpacity>
@@ -122,23 +145,24 @@ export default function NotesScreen() {
           </View>
           <TouchableOpacity 
             onPress={onRefresh}
-            style={styles.refreshButton}
+            style={[styles.refreshButton, { backgroundColor: colors.background }]}
             disabled={refreshing}
           >
             <CustomIcon 
               name="refresh" 
               size={24} 
-              color={refreshing ? colors.icon : colors.primary} 
+              color={refreshing ? colors.textSecondary : colors.primary} 
+              style={refreshing ? styles.refreshingIcon : undefined}
             />
           </TouchableOpacity>
         </View>
 
         {loading && !refreshing && notes.length === 0 ? (
-           null
+          null
         ) : filteredNotes.length === 0 && !loading ? (
           <ThemedView style={[styles.centered, { backgroundColor: colors.background }]}>
             <CustomIcon name="help-circle" size={48} color={colors.icon} />
-            <ThemedText style={{color: colors.text, marginTop: 10}}>
+            <ThemedText style={[styles.emptyText, { color: colors.textSecondary }]}>
               {searchQuery ? `Aucune note ne correspond à \"${searchQuery}\"` : "Aucune note pour le moment."}
             </ThemedText>
           </ThemedView>
@@ -173,67 +197,90 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
   },
+  headerControlsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    gap: 12,
+  },
+  searchContainer: {
+    flex: 1,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    height: 40,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+    fontSize: 16,
+  },
+  clearButton: {
+    padding: 8,
+    borderRadius: 8,
+  },
+  refreshButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
+  },
+  refreshingIcon: {
+    transform: [{ rotate: '360deg' }],
+  },
   card: {
     marginHorizontal: 16,
     marginVertical: 8,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 2,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+  },
+  authorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  authorIcon: {
+    marginRight: 8,
+  },
+  authorText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   messageText: {
-    marginTop: 4,
     fontSize: 14,
     lineHeight: 20,
   },
   dateText: {
     fontSize: 12,
   },
-  listContentContainer: {
-    paddingBottom: 16,
-    paddingTop: 8,
-  },
-  headerControlsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  searchContainer: {
-    flex: 1,
-    marginRight: 12,
-  },
-  searchInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 44,
-  },
-  searchIcon: {
-    marginRight: 10,
-  },
-  searchInput: {
-    flex: 1,
+  emptyText: {
+    marginTop: 12,
     fontSize: 16,
-    height: '100%',
+    textAlign: 'center',
   },
-  clearButton: {
-    padding: 6,
-  },
-  refreshButton: {
-    padding: 8,
+  listContentContainer: {
+    paddingVertical: 8,
   },
   loadingContainer: {
     flex: 1,
@@ -241,7 +288,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 10,
+    marginTop: 12,
     fontSize: 16,
   },
   errorContainer: {
@@ -251,17 +298,18 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   errorText: {
+    marginTop: 12,
     fontSize: 16,
     textAlign: 'center',
-    marginBottom: 20,
   },
   retryButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 30,
+    marginTop: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderRadius: 8,
   },
   retryButtonText: {
     fontSize: 16,
-    fontWeight: 'bold',
-  }
+    fontWeight: '600',
+  },
 }); 

@@ -105,7 +105,7 @@ export default function CommandeDetailsScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <HeaderWithSidebars restaurantName={selectedRestaurant?.nom_restaurant || ''} />
       <Stack.Screen
         options={{
@@ -113,10 +113,10 @@ export default function CommandeDetailsScreen() {
         }}
       />
       
-      <View style={styles.navBar}>
+      <View style={[styles.navBar, { backgroundColor: colors.surface }]}>
         <TouchableOpacity 
           onPress={handleBack}
-          style={styles.navButton}
+          style={[styles.navButton, { backgroundColor: colors.background }]}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <CustomIcon name="chevron-right" size={24} color={colors.primary} style={{ transform: [{ rotate: '180deg' }] }} />
@@ -124,7 +124,7 @@ export default function CommandeDetailsScreen() {
         
         <TouchableOpacity 
           onPress={onRefresh}
-          style={styles.navButton}
+          style={[styles.navButton, { backgroundColor: colors.background }]}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <CustomIcon 
@@ -138,54 +138,54 @@ export default function CommandeDetailsScreen() {
 
       <ScrollView style={styles.container}>
         <View style={styles.content}>
-          <View style={[styles.card, { backgroundColor: colors.background }]}>
-            <View style={styles.header}>
+          <View style={[styles.card, { backgroundColor: colors.surface }]}>
+            <View style={[styles.header, { borderBottomColor: colors.border }]}>
               <View style={styles.statusContainer}>
                 <CustomIcon 
                   name={commande.statut === 'EN_COURS' ? 'clock-time-four' : 
                         commande.statut === 'VALIDEE' ? 'check' : 'alert-circle'} 
                   size={24} 
-                  color={commande.statut === 'EN_COURS' ? colors.primary : 
-                         commande.statut === 'VALIDEE' ? '#22c55e' : '#ef4444'} 
+                  color={commande.statut === 'EN_COURS' ? colors.warning : 
+                         commande.statut === 'VALIDEE' ? colors.success : colors.error} 
                 />
                 <ThemedText style={[styles.status, { 
-                  color: commande.statut === 'EN_COURS' ? colors.primary : 
-                         commande.statut === 'VALIDEE' ? '#22c55e' : '#ef4444'
+                  color: commande.statut === 'EN_COURS' ? colors.warning : 
+                         commande.statut === 'VALIDEE' ? colors.success : colors.error
                 }]}>
                   {commande.statut === 'EN_COURS' && 'En cours'}
                   {commande.statut === 'VALIDEE' && 'Validée'}
                   {commande.statut === 'ANNULEE' && 'Annulée'}
                 </ThemedText>
               </View>
-              <ThemedText style={styles.date}>
+              <ThemedText style={[styles.date, { color: colors.textSecondary }]}>
                 {new Date(commande.created_at).toLocaleString('fr-FR')}
               </ThemedText>
             </View>
 
             <View style={styles.details}>
-              <View style={styles.detailRow}>
+              <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
                 <View style={styles.detailLabelContainer}>
                   <CustomIcon name="view-dashboard" size={20} color={colors.icon} />
-                  <ThemedText style={styles.detailLabel}>Nombre d'articles</ThemedText>
+                  <ThemedText style={[styles.detailLabel, { color: colors.textSecondary }]}>Nombre d'articles</ThemedText>
                 </View>
-                <ThemedText style={styles.detailValue}>{commande.nb_articles}</ThemedText>
+                <ThemedText style={[styles.detailValue, { color: colors.text }]}>{commande.nb_articles}</ThemedText>
               </View>
-              <View style={styles.detailRow}>
+              <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
                 <View style={styles.detailLabelContainer}>
                   <CustomIcon name="currency-eur" size={20} color={colors.icon} />
-                  <ThemedText style={styles.detailLabel}>Montant total</ThemedText>
+                  <ThemedText style={[styles.detailLabel, { color: colors.textSecondary }]}>Montant total</ThemedText>
                 </View>
                 <ThemedText style={[styles.detailValue, { color: colors.primary, fontWeight: '600' }]}>
                   {Number(commande.montant).toFixed(2)} €
                 </ThemedText>
               </View>
               {commande.table && (
-                <View style={styles.detailRow}>
+                <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
                   <View style={styles.detailLabelContainer}>
                     <CustomIcon name="silverware-fork-knife" size={20} color={colors.icon} />
-                    <ThemedText style={styles.detailLabel}>Table</ThemedText>
+                    <ThemedText style={[styles.detailLabel, { color: colors.textSecondary }]}>Table</ThemedText>
                   </View>
-                  <ThemedText style={styles.detailValue}>
+                  <ThemedText style={[styles.detailValue, { color: colors.text }]}>
                     {commande.table.numero}
                   </ThemedText>
                 </View>
@@ -193,10 +193,10 @@ export default function CommandeDetailsScreen() {
             </View>
           </View>
 
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
+          <View style={[styles.section, { backgroundColor: colors.surface }]}>
+            <View style={[styles.sectionHeader, { borderBottomColor: colors.border }]}>
               <CustomIcon name="view-dashboard" size={24} color={colors.icon} />
-              <ThemedText style={styles.sectionTitle}>Articles commandés</ThemedText>
+              <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>Articles commandés</ThemedText>
             </View>
             {lignesCommande && lignesCommande.length > 0 ? (
               lignesCommande.map((ligne) => (
@@ -267,67 +267,70 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: 12,
-    padding: 16,
     marginBottom: 16,
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
+    padding: 16,
+    borderBottomWidth: 1,
   },
   statusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    marginBottom: 8,
   },
   status: {
     fontSize: 16,
     fontWeight: '600',
+    marginLeft: 8,
   },
   date: {
     fontSize: 14,
-    opacity: 0.7,
   },
   details: {
-    gap: 12,
+    padding: 16,
   },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
   },
   detailLabelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
   detailLabel: {
     fontSize: 14,
-    opacity: 0.7,
+    marginLeft: 8,
   },
   detailValue: {
     fontSize: 14,
-    fontWeight: '500',
   },
   section: {
-    marginTop: 8,
+    borderRadius: 12,
+    marginBottom: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 16,
+    padding: 16,
+    borderBottomWidth: 1,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
-    marginBottom: 12,
+    marginLeft: 8,
   },
   ligneCommandeCard: {
     borderRadius: 12,
@@ -415,13 +418,12 @@ const styles = StyleSheet.create({
   navBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    backgroundColor: 'transparent',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(142, 142, 147, 0.12)',
   },
   navButton: {
-    padding: 4,
+    padding: 8,
     borderRadius: 8,
   },
 }); 
