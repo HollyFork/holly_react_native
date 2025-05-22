@@ -5,10 +5,10 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, FlatList, Image, StyleSheet, TouchableOpacity, useColorScheme, View } from 'react-native';
 import Animated, {
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming
+    runOnJS,
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CustomIcon } from './CustomIcon';
@@ -132,13 +132,14 @@ export function Navbar({ isVisible, onClose, currentRoute }: NavbarProps) {
   // Liste des éléments de navigation incluant le bouton de déconnexion
   const navItems: NavItem[] = [
     { id: '1', title: 'Tableau de bord', icon: 'view-dashboard', route: '/(tabs)/dashboard' },
-    { id: '2', title: 'Réservations', icon: 'calendar-clock', route: '/(tabs)/reservations' },
-    { id: '3', title: 'Commandes', icon: 'cart', route: '/(tabs)/commandes' },
-    { id: '4', title: 'Stocks', icon: 'fridge-alert-outline', route: '/(tabs)/stocks' },
+    { id: '2', title: 'Salles', icon: 'office-building', route: '/(tabs)/salles' },
+    { id: '3', title: 'Réservations', icon: 'calendar-clock', route: '/(tabs)/reservations' },
+    { id: '4', title: 'Commandes', icon: 'cart', route: '/(tabs)/commandes' },
+    { id: '5', title: 'Stocks', icon: 'fridge-alert-outline', route: '/(tabs)/stocks' },
     { id: 'notes', title: 'Notes', icon: 'note-text-outline', route: '/(tabs)/notes' },
-    { id: '5', title: 'Statistiques', icon: 'chart-bar', route: '/(tabs)/stats' },
-    { id: '6', title: 'Paramètres', icon: 'cog', route: '/(tabs)/settings' },
-    { id: '7', title: 'Support', icon: 'help-circle', route: '/(tabs)/support' },
+    { id: '6', title: 'Statistiques', icon: 'chart-bar', route: '/(tabs)/stats' },
+    { id: '7', title: 'Paramètres', icon: 'cog', route: '/(tabs)/settings' },
+    { id: '8', title: 'Support', icon: 'help-circle', route: '/(tabs)/support' },
     // Séparateur
     { id: 'separator', title: '', icon: '' },
     // Bouton de déconnexion

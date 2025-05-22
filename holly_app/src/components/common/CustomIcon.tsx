@@ -1,11 +1,12 @@
-import React from 'react';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import React from 'react';
 import { OpaqueColorValue, StyleProp, TextStyle } from 'react-native';
 
 // Sélection d'icônes utilisées dans l'application, choisies pour leur ressemblance avec SF Symbols
 export type IconName = 
   | 'home'                    // house.fill
   | 'office-building-cog'     // building.2.fill
+  | 'office-building'         // building.2
   | 'menu'                    // line.3.horizontal
   | 'close'                   // xmark
   | 'check'                   // checkmark
@@ -30,7 +31,7 @@ export type IconName =
   | 'currency-eur'            // eurosign.circle.fill
   | 'note-text'               // note.text
   | 'plus'                    // plus.circle.fill
-  | 'fridge-alert-outline';   // refrigerator.fill
+  | 'fridge-alert-outline';   // fridge.fill
 
 interface CustomIconProps {
   name: IconName;
@@ -47,6 +48,7 @@ export function CustomIcon({ name, size = 24, color, style }: CustomIconProps) {
     'euro_symbol': 'currency-eur',
     'schedule': 'clock-time-four',
     'apartment': 'office-building-cog',
+    'building': 'office-building',
     'dashboard': 'view-dashboard',
     'event': 'calendar-clock',
     'assessment': 'chart-line',

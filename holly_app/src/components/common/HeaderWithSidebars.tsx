@@ -4,6 +4,7 @@ import { Sidebar } from '@/components/common/Sidebar';
 import { ThemedText } from '@/components/common/ThemedText';
 import { Colors } from '@/constants/Colors';
 import { useRestaurants } from '@/contexts/RestaurantContext';
+import { useOrientation } from '@/hooks/useOrientation';
 import { Restaurant } from '@/models/Restaurant';
 import { Portal } from '@gorhom/portal';
 import { router, usePathname } from 'expo-router';
@@ -34,6 +35,7 @@ export function HeaderWithSidebars({ restaurantName }: HeaderWithSidebarsProps) 
   const colorScheme = useColorScheme();
   const insets = useSafeAreaInsets();
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+  const orientation = useOrientation();
   
   const { 
     restaurants,
@@ -85,7 +87,8 @@ export function HeaderWithSidebars({ restaurantName }: HeaderWithSidebarsProps) 
             styles.header, 
             { 
               backgroundColor: colors.background,
-              paddingTop: insets.top || 40
+              paddingTop: insets.top || (orientation === 'LANDSCAPE' ? 20 : 40),
+              paddingBottom: orientation === 'LANDSCAPE' ? 8 : 16,
             }
           ]}
         >
@@ -147,7 +150,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%',
     paddingHorizontal: 16,
-    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },

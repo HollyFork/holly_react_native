@@ -22,6 +22,12 @@ export default function AppLayout() {
           }}
         />
         <Tabs.Screen 
+          name="salles"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen 
           name="explore"
           options={{
             href: null,
