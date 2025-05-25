@@ -6,10 +6,12 @@ interface CommandeBase {
 }
 
 export interface LigneCommande {
-  id: number;
-  commande: string; // URL de la commande
-  article: Article;
+  id?: number;
+  commande_id: number;
+  article_id: number;
   quantite: number;
   prix_unitaire: number;
-  article_id: number;
+  article?: Article;
+  created_at?: string;
+  updated_at?: string;
 } 

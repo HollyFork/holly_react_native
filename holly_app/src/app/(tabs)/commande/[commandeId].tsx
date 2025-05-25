@@ -1,21 +1,154 @@
+import { Button } from '@/components/common/Button';
 import { CustomIcon } from '@/components/common/CustomIcon';
 import { HeaderWithSidebars } from '@/components/common/HeaderWithSidebars';
 import { ThemedText } from '@/components/common/ThemedText';
 import { Colors } from '@/constants/Colors';
 import { useRestaurants } from '@/contexts/RestaurantContext';
+import { useArticles } from '@/hooks/useArticles';
+import { Article } from '@/models/Article';
 import { Commande } from '@/models/Commande';
 import { LigneCommande } from '@/models/LigneCommande';
 import { commandeService } from '@/services/entities/commandeService';
 import { ligneCommandeService } from '@/services/entities/ligneCommandeService';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View, useColorScheme } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, View, useColorScheme } from 'react-native';
 
+const AddLigneCommandeModal = ({ 
+  visible, 
+  onClose, 
+  commandeId, 
+  onSuccess 
+}: { 
+  visible: boolean; 
+  onClose: () => void; 
+  commandeId: number; 
+  onSuccess: () => void;
+}) => {
+  const [selectedArticle, setSelectedArticle] = useState<number | null>(null);
+  const [quantite, setQuantite] = useState('1');
+  const [loading, setLoading] = useState(false);
+  const { articles, loading: articlesLoading } = useArticles();
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
 
+  const handleSubmit = async () => {
+    if (!selectedArticle || !quantite || isNaN(Number(quantite)) || Number(quantite) <= 0) {
+      Alert.alert('Erreur', 'Veuillez sélectionner un article et une quantité valide');
+      return;
+    }
 
+    try {
+      setLoading(true);
+      const article = articles.find((a: Article) => a.id === selectedArticle);
+      if (!article) throw new Error('Article non trouvé');
+
+      const nouvelleLigne: Omit<LigneCommande, 'id' | 'article' | 'created_at' | 'updated_at'> = {
+        commande_id: commandeId,
+        article_id: selectedArticle,
+        quantite: Number(quantite),
+        prix_unitaire: article.prix,
+      };
+
+      await ligneCommandeService.addLigneCommande(nouvelleLigne);
+      onSuccess();
+      onClose();
+      setSelectedArticle(null);
+      setQuantite('1');
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout de la ligne de commande:', error);
+      Alert.alert('Erreur', 'Impossible d\'ajouter la ligne de commande');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <View style={[styles.modalContainer, { backgroundColor: colors.background + '99' }]}>
+        <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+            <ThemedText style={styles.modalTitle}>Ajouter un article</ThemedText>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <CustomIcon name="close" size={24} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.modalBody}>
+            <View style={styles.formGroup}>
+              <ThemedText style={[styles.label, { color: colors.textSecondary }]}>Article</ThemedText>
+              <ScrollView style={[styles.articlesList, { backgroundColor: colors.background }]}>
+                {articlesLoading ? (
+                  <ThemedText>Chargement des articles...</ThemedText>
+                ) : (
+                  articles.map((article) => (
+                    <TouchableOpacity
+                      key={article.id}
+                      style={[
+                        styles.articleItem,
+                        selectedArticle === article.id && { backgroundColor: colors.primary + '15' }
+                      ]}
+                      onPress={() => setSelectedArticle(article.id)}
+                    >
+                      <ThemedText style={[
+                        styles.articleName,
+                        selectedArticle === article.id && { color: colors.primary }
+                      ]}>
+                        {article.nom}
+                      </ThemedText>
+                      <ThemedText style={[styles.articlePrice, { color: colors.textSecondary }]}>
+                        {Number(article.prix).toFixed(2)} €
+                      </ThemedText>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </ScrollView>
+            </View>
+
+            <View style={styles.formGroup}>
+              <ThemedText style={[styles.label, { color: colors.textSecondary }]}>Quantité</ThemedText>
+              <TextInput
+                style={[styles.input, { 
+                  backgroundColor: colors.background,
+                  color: colors.text,
+                  borderColor: colors.border
+                }]}
+                value={quantite}
+                onChangeText={setQuantite}
+                keyboardType="numeric"
+                placeholder="1"
+                placeholderTextColor={colors.textSecondary}
+              />
+            </View>
+          </View>
+
+          <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
+            <Button
+              title="Annuler"
+              onPress={onClose}
+              variant="secondary"
+              style={styles.footerButton}
+            />
+            <Button
+              title="Ajouter"
+              onPress={handleSubmit}
+              loading={loading}
+              style={styles.footerButton}
+            />
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
 
 export default function CommandeDetailsScreen() {
-  const { commandeId } = useLocalSearchParams();
+  const { commandeId, from } = useLocalSearchParams();
   const [commande, setCommande] = useState<Commande | null>(null);
   const [lignesCommande, setLignesCommande] = useState<LigneCommande[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +157,7 @@ export default function CommandeDetailsScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const { selectedRestaurant } = useRestaurants();
+  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
 
   const fetchCommandeDetails = async () => {
     if (!commandeId || isNaN(Number(commandeId))) {
@@ -41,7 +175,7 @@ export default function CommandeDetailsScreen() {
       ]);
       
       console.log('Données commande reçues:', commandeData.data);
-      console.log('Lignes commande reçues:', lignesData.data);
+      console.log('Statut de la commande:', commandeData.data?.statut);
       
       if (!commandeData.data) {
         setError('Commande non trouvée');
@@ -75,7 +209,13 @@ export default function CommandeDetailsScreen() {
   };
 
   const handleBack = () => {
-    router.push('/(tabs)/commandes');
+    if (from === 'tables') {
+      router.push('/(tabs)/salles');
+    } else if (from === 'commandes') {
+      router.push('/(tabs)/commandes');
+    } else {
+      router.push('/');
+    }
   };
 
   if (loading) {
@@ -121,6 +261,32 @@ export default function CommandeDetailsScreen() {
         >
           <CustomIcon name="chevron-right" size={24} color={colors.primary} style={{ transform: [{ rotate: '180deg' }] }} />
         </TouchableOpacity>
+
+        {commande && commande.statut === 'EN_COURS' && (
+          <TouchableOpacity
+            style={[styles.addButton, { 
+              backgroundColor: colors.primary,
+              borderWidth: 1,
+              borderColor: colors.primary + '40',
+              elevation: 2,
+              shadowColor: colors.primary,
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.25,
+              shadowRadius: 3.84,
+            }]}
+            onPress={() => setIsAddModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <CustomIcon name="plus" size={20} color={colors.surface} />
+            <ThemedText style={[styles.addButtonText, { 
+              color: colors.surface,
+              fontSize: 15,
+              fontWeight: '700',
+            }]}>
+              Ajouter un article
+            </ThemedText>
+          </TouchableOpacity>
+        )}
         
         <TouchableOpacity 
           onPress={onRefresh}
@@ -168,16 +334,15 @@ export default function CommandeDetailsScreen() {
                   <CustomIcon name="view-dashboard" size={20} color={colors.icon} />
                   <ThemedText style={[styles.detailLabel, { color: colors.textSecondary }]}>Nombre d'articles</ThemedText>
                 </View>
-                <ThemedText style={[styles.detailValue, { color: colors.text }]}>{commande.nb_articles}</ThemedText>
-              </View>
-              <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
-                <View style={styles.detailLabelContainer}>
-                  <CustomIcon name="currency-eur" size={20} color={colors.icon} />
-                  <ThemedText style={[styles.detailLabel, { color: colors.textSecondary }]}>Montant total</ThemedText>
+                <View style={[styles.infoContainer, { backgroundColor: colors.primary + '15' }]}>
+                  <ThemedText style={[styles.detailValue, { 
+                    color: colors.primary, 
+                    fontWeight: '700',
+                    fontSize: 16,
+                  }]}>
+                    {commande.nb_articles}
+                  </ThemedText>
                 </View>
-                <ThemedText style={[styles.detailValue, { color: colors.primary, fontWeight: '600' }]}>
-                  {Number(commande.montant).toFixed(2)} €
-                </ThemedText>
               </View>
               {commande.table && (
                 <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
@@ -185,11 +350,32 @@ export default function CommandeDetailsScreen() {
                     <CustomIcon name="silverware-fork-knife" size={20} color={colors.icon} />
                     <ThemedText style={[styles.detailLabel, { color: colors.textSecondary }]}>Table</ThemedText>
                   </View>
-                  <ThemedText style={[styles.detailValue, { color: colors.text }]}>
-                    {commande.table.numero}
-                  </ThemedText>
+                  <View style={[styles.infoContainer, { backgroundColor: colors.primary + '15' }]}>
+                    <ThemedText style={[styles.detailValue, { 
+                      color: colors.primary, 
+                      fontWeight: '700',
+                      fontSize: 16,
+                    }]}>
+                      {commande.table.numero}
+                    </ThemedText>
+                  </View>
                 </View>
               )}
+              <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
+                <View style={styles.detailLabelContainer}>
+                  <CustomIcon name="currency-eur" size={20} color={colors.icon} />
+                  <ThemedText style={[styles.detailLabel, { color: colors.textSecondary }]}>Montant total</ThemedText>
+                </View>
+                <View style={[styles.infoContainer, { backgroundColor: colors.primary + '15' }]}>
+                  <ThemedText style={[styles.detailValue, { 
+                    color: colors.primary, 
+                    fontWeight: '700',
+                    fontSize: 18,
+                  }]}>
+                    {Number(commande.montant).toFixed(2)} €
+                  </ThemedText>
+                </View>
+              </View>
             </View>
           </View>
 
@@ -240,9 +426,15 @@ export default function CommandeDetailsScreen() {
                 </View>
               ))
             ) : (
-              <View style={[styles.emptyState, { backgroundColor: colors.background }]}>
-                <CustomIcon name="alert-circle" size={24} color={colors.icon} style={{ marginBottom: 8 }} />
-                <ThemedText style={{ color: colors.icon, textAlign: 'center' }}>
+              <View style={[styles.emptyState, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <CustomIcon name="alert-circle" size={32} color={colors.icon} style={{ marginBottom: 12 }} />
+                <ThemedText style={{ 
+                  color: colors.textSecondary, 
+                  textAlign: 'center',
+                  fontSize: 15,
+                  paddingHorizontal: 16,
+                  lineHeight: 22
+                }}>
                   Aucun article dans cette commande
                 </ThemedText>
               </View>
@@ -250,6 +442,13 @@ export default function CommandeDetailsScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <AddLigneCommandeModal
+        visible={isAddModalVisible}
+        onClose={() => setIsAddModalVisible(false)}
+        commandeId={Number(commandeId)}
+        onSuccess={fetchCommandeDetails}
+      />
     </View>
   );
 }
@@ -407,23 +606,129 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   emptyState: {
-    padding: 16,
+    padding: 24,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
+    marginHorizontal: 16,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.1)',
+    minHeight: 120,
   },
   navBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(142, 142, 147, 0.12)',
+    gap: 12,
+    minHeight: 64,
   },
   navButton: {
     padding: 8,
     borderRadius: 8,
+    minWidth: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  infoContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 60,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '100%',
+    maxHeight: '80%',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  modalBody: {
+    padding: 16,
+  },
+  formGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  articlesList: {
+    maxHeight: 200,
+    borderRadius: 8,
+  },
+  articleItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
+  },
+  articleName: {
+    fontSize: 16,
+  },
+  articlePrice: {
+    fontSize: 14,
+  },
+  input: {
+    height: 48,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    fontSize: 16,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    padding: 16,
+    borderTopWidth: 1,
+    gap: 12,
+  },
+  footerButton: {
+    minWidth: 100,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    flex: 1,
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 44,
+    marginHorizontal: 4,
+  },
+  addButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    textAlign: 'center',
   },
 }); 

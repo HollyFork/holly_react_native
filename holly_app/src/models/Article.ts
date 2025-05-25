@@ -1,11 +1,14 @@
-import { Ingredient } from './Ingredient';
-import { ArticleIngredient } from './ArticleIngredient';
 
 export interface Article {
   id: number;
   nom: string;
+  description?: string;
   prix: number;
-  description: string;
+  categorie_id: number;
+  ingredients?: string[];
+  allergenes?: string[];
+  image_url?: string;
   disponible: boolean;
-  ingredients: ArticleIngredient[];
+  created_at?: string;
+  updated_at?: string;
 } 

@@ -255,7 +255,7 @@ export default function CommandesScreen() {
         renderItem={({ item }) => (
           <CommandeCard
             commande={item}
-            onPress={() => router.push(`/commande/${item.id}`)}
+            onPress={() => router.navigate(`/(tabs)/commande/${item.id}?from=commandes` as any)}
           />
         )}
         contentContainerStyle={styles.listContent}

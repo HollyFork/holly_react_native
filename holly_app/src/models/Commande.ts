@@ -13,4 +13,14 @@ export interface Commande {
   statut: 'EN_COURS' | 'VALIDEE' | 'ANNULEE';
   table?: Table;
   lignes?: any[]; // Sera typé dans l'utilisation comme LigneCommande[]
+}
+
+// Interface pour la création de commande
+export interface CreateCommandeDTO {
+  restaurant_id: number;
+  table_id: number;
+  created_by_id: number;
+  statut: 'EN_COURS' | 'VALIDEE' | 'ANNULEE';
+  nb_articles?: number;
+  montant?: number;
 } 

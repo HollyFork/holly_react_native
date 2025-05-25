@@ -1,5 +1,5 @@
-import { Salle } from './Salle';
 import { Employe } from './Employe';
+import { Salle } from './Salle';
 
 export interface Table {
   id: number;
@@ -9,6 +9,7 @@ export interface Table {
   salle: Salle;
   employee_in_charge: Employe;
   is_occupied: boolean;
+  current_commande_id?: number;
   position_x: number;
   position_y: number;
 } 

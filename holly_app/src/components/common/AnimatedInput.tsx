@@ -39,8 +39,6 @@ export default function AnimatedInput({
         style={[
           styles.input,
           {
-            backgroundColor: colors.surface,
-            borderColor: isFocused ? colors.primary : colors.border,
             color: colors.text,
           },
           style
@@ -72,14 +70,17 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
     minHeight: 50,
+    width: '100%',
+    borderRadius: 8,
+    borderWidth: 1,
   },
   input: {
-    height: 50,
-    borderRadius: 8,
+    height: '100%',
+    width: '100%',
     paddingHorizontal: 16,
     fontSize: 16,
-    borderWidth: 1,
     zIndex: 1,
+    position: 'relative',
   },
   bubble: {
     position: 'absolute',
@@ -89,5 +90,6 @@ const styles = StyleSheet.create({
     zIndex: 0,
     bottom: 8,
     left: 16,
+    opacity: 0.5,
   },
 }); 

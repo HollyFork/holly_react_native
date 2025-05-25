@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    KeyboardAvoidingView,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 // @ts-ignore - Contourne les problèmes de typage avec LinearGradient
 import AnimatedInput from '@/components/common/AnimatedInput';
@@ -132,7 +132,8 @@ export default function LoginScreen() {
                 styles.input,
                 { 
                   backgroundColor: isDark ? 'rgba(42, 42, 42, 0.8)' : 'rgba(245, 245, 245, 0.8)',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                  borderWidth: 1,
                 }
               ]}
               placeholder="Nom d'utilisateur"
@@ -151,7 +152,8 @@ export default function LoginScreen() {
                 styles.input,
                 { 
                   backgroundColor: isDark ? 'rgba(42, 42, 42, 0.8)' : 'rgba(245, 245, 245, 0.8)',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                  borderWidth: 1,
                 }
               ]}
               placeholder="Mot de passe"
@@ -234,22 +236,23 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   inputContainer: {
-    width: isTablet ? '60%' : '80%',
-    maxWidth: 400,
+    width: isTablet ? '45%' : '70%',
+    maxWidth: 350,
     marginBottom: 30,
+    gap: 16,
+    alignItems: 'center',
   },
   input: {
     height: isTablet ? 60 : 50,
     borderRadius: 8,
     paddingHorizontal: 16,
-    marginBottom: 16,
     fontSize: isTablet ? 18 : 16,
-    borderWidth: 1,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 1.41,
+    width: '100%',
   },
   button: {
     height: isTablet ? 60 : 50,
@@ -262,6 +265,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 2.62,
+    width: '100%',
   },
   buttonDisabled: {
     backgroundColor: '#A0A0A0',
