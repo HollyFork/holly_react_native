@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, Dimensions, ViewStyle } from 'react-native';
+import { Dimensions, StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
 import Animated, {
-  useAnimatedStyle,
-  withSpring,
   interpolate,
+  useAnimatedStyle,
   useSharedValue,
+  withSpring,
 } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
@@ -105,8 +105,8 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({ items }) => {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 32, // Remis en bas
-    right: 32, // Remis à droite
+    bottom: 20, // Augmenté de 32 à 64 pour descendre le menu
+    right: 30, // Remis à droite
     zIndex: 1000,
   },
   mainButton: {

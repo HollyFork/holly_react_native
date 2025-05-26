@@ -8,6 +8,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { useStocks } from '@/hooks/useStocks';
 import { Stock } from '@/models/Stock';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -94,19 +95,14 @@ function StockCard({ stock, onPress }: StockCardProps) {
 }
 
 export default function StocksScreen() {
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+  const { selectedRestaurant } = useRestaurants();
+  const { stocks, loading: isLoading, error, refreshStocks } = useStocks(selectedRestaurant?.id_restaurant || null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<StockFilter>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const { selectedRestaurant } = useRestaurants();
-  const {
-    stocks,
-    loading,
-    error,
-    refreshStocks
-  } = useStocks(selectedRestaurant?.id_restaurant || null);
 
   const handleRefresh = async () => {
     if (isRefreshing) return;
@@ -166,9 +162,9 @@ export default function StocksScreen() {
     );
   };
 
-  if (loading) {
+  if (isLoading && !isRefreshing) {
     return (
-      <ThemedView style={[styles.container, styles.centered]}>
+      <ThemedView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
         <ThemedText style={styles.loadingText}>Chargement des stocks...</ThemedText>
       </ThemedView>
@@ -177,8 +173,8 @@ export default function StocksScreen() {
 
   if (error || !selectedRestaurant) {
     return (
-      <ThemedView style={[styles.container, styles.centered]}>
-        <CustomIcon name="alert-circle" size={40} color={colors.error} />
+      <ThemedView style={styles.errorContainer}>
+        <CustomIcon name="alert-circle" size={48} color={colors.error} />
         <ThemedText style={styles.errorText}>
           {error || "Aucun restaurant sélectionné"}
         </ThemedText>
@@ -186,7 +182,7 @@ export default function StocksScreen() {
           style={styles.retryButton}
           onPress={handleRefresh}
         >
-          <ThemedText style={styles.retryText}>Réessayer</ThemedText>
+          <ThemedText style={styles.retryButtonText}>Réessayer</ThemedText>
         </TouchableOpacity>
       </ThemedView>
     );
@@ -428,7 +424,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#F27E42',
   },
-  retryText: {
+  retryButtonText: {
     color: 'white',
     fontWeight: '600',
   },
@@ -446,5 +442,15 @@ const styles = StyleSheet.create({
   refreshButton: {
     padding: 8,
     borderRadius: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 }); 

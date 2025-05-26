@@ -4,6 +4,7 @@ import { useFonts } from 'expo-font';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { FloatingMenu } from '@/components/common/FloatingMenu';
@@ -57,29 +58,31 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-      <AuthProvider>
-        <PortalProvider>
-          <RestaurantProvider>
-            <ThemedView variant="background" style={{ flex: 1 }}>
-              <StatusBar style={isDark ? 'light' : 'dark'} />
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  contentStyle: {
-                    backgroundColor: colors.background,
-                  },
-                }}
-              >
-                <Stack.Screen name="index" />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="auth" options={{ headerShown: false }} />
-              </Stack>
-              <FloatingMenuWithAuth />
-            </ThemedView>
-          </RestaurantProvider>
-        </PortalProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+        <AuthProvider>
+          <PortalProvider>
+            <RestaurantProvider>
+              <ThemedView variant="background" style={{ flex: 1 }}>
+                <StatusBar style={isDark ? 'light' : 'dark'} />
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    contentStyle: {
+                      backgroundColor: colors.background,
+                    },
+                  }}
+                >
+                  <Stack.Screen name="index" />
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen name="auth" options={{ headerShown: false }} />
+                </Stack>
+                <FloatingMenuWithAuth />
+              </ThemedView>
+            </RestaurantProvider>
+          </PortalProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }

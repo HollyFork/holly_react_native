@@ -2,15 +2,107 @@
 import { CustomIcon } from '@/components/common/CustomIcon';
 import { HeaderWithSidebars } from '@/components/common/HeaderWithSidebars';
 import { ThemedText } from '@/components/common/ThemedText';
+import ThemedView from '@/components/common/ThemedView';
 import { Colors } from '@/constants/Colors';
 import { useRestaurants } from '@/contexts/RestaurantContext';
 import { Commande } from '@/models/Commande';
 import { LigneCommande } from '@/models/LigneCommande';
 import { commandeService } from '@/services/entities/commandeService';
 import { ligneCommandeService } from '@/services/entities/ligneCommandeService';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { useFocusEffect } from '@react-navigation/native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View, useColorScheme } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, ScrollView, StyleSheet, TouchableOpacity, View, useColorScheme } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
+
+function LigneCommandeItem({ 
+  ligne, 
+  colors, 
+  onDelete,
+  commandeStatus
+}: { 
+  ligne: LigneCommande; 
+  colors: any;
+  onDelete: (id: number) => void;
+  commandeStatus: string;
+}) {
+  const swipeableRef = useRef<Swipeable>(null);
+
+  const renderRightActions = (
+    progressAnimatedValue: Animated.AnimatedInterpolation<string | number>,
+    dragAnimatedValue: Animated.AnimatedInterpolation<string | number>,
+    swipeable: Swipeable
+  ) => {
+    if (typeof ligne.id !== 'number' || commandeStatus !== 'EN_COURS') return null;
+    
+    return (
+      <View style={[styles.deleteActionContainer, { width: 90 }]}>
+        <TouchableOpacity
+          style={[styles.deleteAction, { backgroundColor: colors.error }]}
+          onPress={() => onDelete(ligne.id as number)}
+        >
+          <MaterialCommunityIcons 
+            name="delete" 
+            size={24} 
+            color="white" 
+          />
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  return (
+    <Swipeable
+      ref={swipeableRef}
+      renderRightActions={renderRightActions}
+      rightThreshold={35}
+      containerStyle={styles.swipeableContainer}
+      enabled={commandeStatus === 'EN_COURS'}
+      friction={1.5}
+      overshootRight={false}
+    >
+      <View style={[styles.ligneCommandeCard, { 
+        backgroundColor: colors.surface,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+        opacity: commandeStatus !== 'EN_COURS' ? 0.7 : 1,
+      }]}>
+        <View style={styles.ligneCommandeContent}>
+          <View style={styles.ligneCommandeMain}>
+            <ThemedText style={[styles.ligneCommandeTitle, { 
+              color: colors.text,
+              fontSize: 15,
+            }]} numberOfLines={1}>
+              {ligne.article?.nom || 'Article inconnu'}
+            </ThemedText>
+            <ThemedText style={[styles.ligneCommandePrice, { 
+              color: colors.primary,
+              fontSize: 15,
+              fontWeight: '600',
+            }]}>
+              {(Number(ligne.prix_unitaire) * ligne.quantite).toFixed(2)} €
+            </ThemedText>
+          </View>
+          <View style={styles.ligneCommandeSub}>
+            <ThemedText style={[styles.ligneCommandeQuantity, { 
+              color: colors.textSecondary,
+              fontSize: 13,
+            }]}>
+              Quantité : {ligne.quantite}
+            </ThemedText>
+            <ThemedText style={[styles.ligneCommandeUnitPrice, { 
+              color: colors.textSecondary,
+              fontSize: 13,
+            }]}>
+              {Number(ligne.prix_unitaire).toFixed(2)} € l'unité
+            </ThemedText>
+          </View>
+        </View>
+      </View>
+    </Swipeable>
+  );
+}
 
 export default function CommandeDetailsScreen() {
   const { commandeId, from } = useLocalSearchParams();
@@ -67,6 +159,13 @@ export default function CommandeDetailsScreen() {
     fetchCommandeDetails();
   }, [commandeId]);
 
+  useFocusEffect(
+    useCallback(() => {
+      console.log('La page de détail de la commande est devenue active');
+      fetchCommandeDetails();
+    }, [commandeId])
+  );
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchCommandeDetails();
@@ -82,20 +181,43 @@ export default function CommandeDetailsScreen() {
     }
   };
 
-  if (loading) {
+  const handleDeleteLigneCommande = async (ligneId: number) => {
+    try {
+      await ligneCommandeService.deleteLigneCommande(ligneId);
+      // Rafraîchir les données après la suppression
+      fetchCommandeDetails();
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la ligne de commande:', error);
+      Alert.alert(
+        'Erreur',
+        'Une erreur est survenue lors de la suppression de l\'article'
+      );
+    }
+  };
+
+  if (loading || refreshing) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <ThemedText>Chargement...</ThemedText>
-      </View>
+      <ThemedView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <ThemedText style={styles.loadingText}>
+          {refreshing ? 'Rafraîchissement des données...' : 'Chargement des détails de la commande...'}
+        </ThemedText>
+      </ThemedView>
     );
   }
 
   if (error) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <CustomIcon name="alert-circle" size={48} color={colors.error} style={{ marginBottom: 16 }} />
-        <ThemedText style={{ color: colors.error, textAlign: 'center' }}>{error}</ThemedText>
-      </View>
+      <ThemedView style={styles.errorContainer}>
+        <CustomIcon name="alert-circle" size={48} color={colors.error} />
+        <ThemedText style={styles.errorText}>{error}</ThemedText>
+        <TouchableOpacity 
+          style={styles.retryButton}
+          onPress={fetchCommandeDetails}
+        >
+          <ThemedText style={styles.retryButtonText}>Réessayer</ThemedText>
+        </TouchableOpacity>
+      </ThemedView>
     );
   }
 
@@ -250,44 +372,13 @@ export default function CommandeDetailsScreen() {
             </View>
             {lignesCommande && lignesCommande.length > 0 ? (
               lignesCommande.map((ligne) => (
-                <View key={ligne.id} style={[styles.ligneCommandeCard, { backgroundColor: colors.background }]}>
-                  <View style={styles.ligneCommandeHeader}>
-                    <View style={styles.ligneCommandeTitleContainer}>
-                      <CustomIcon name="silverware-fork-knife" size={20} color={colors.icon} style={styles.ligneCommandeIcon} />
-                      <ThemedText style={styles.ligneCommandeTitle}>
-                        {ligne.article?.nom || 'Article inconnu'}
-                      </ThemedText>
-                    </View>
-                    <View style={[styles.quantityBadge, { backgroundColor: colors.primary + '15' }]}>
-                      <ThemedText style={[styles.ligneCommandeQuantity, { color: colors.primary }]}>
-                        x{ligne.quantite}
-                      </ThemedText>
-                    </View>
-                  </View>
-                  <View style={styles.ligneCommandeDetails}>
-                    <ThemedText style={styles.ligneCommandePrice}>
-                      {Number(ligne.prix_unitaire).toFixed(2)} € × {ligne.quantite} = {(Number(ligne.prix_unitaire) * ligne.quantite).toFixed(2)} €
-                    </ThemedText>
-                  </View>
-                  {ligne.article?.ingredients && ligne.article.ingredients.length > 0 && (
-                    <View style={[styles.ingredientsContainer, { borderTopColor: colors.icon + '40' }]}>
-                      <View style={styles.ingredientsHeader}>
-                        <CustomIcon name="view-dashboard" size={20} color={colors.icon} />
-                        <ThemedText style={styles.ingredientsTitle}>Ingrédients</ThemedText>
-                      </View>
-                      {ligne.article.ingredients.map((ingredient) => (
-                        <View key={ingredient.id} style={styles.ingredientItem}>
-                          <ThemedText style={styles.ingredientName}>
-                            • {ingredient.ingredient.nom}
-                          </ThemedText>
-                          <ThemedText style={styles.ingredientQuantity}>
-                            {Number(ingredient.quantite_necessaire).toFixed(2)} {ingredient.ingredient.unite}
-                          </ThemedText>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                </View>
+                <LigneCommandeItem
+                  key={ligne.id}
+                  ligne={ligne}
+                  colors={colors}
+                  onDelete={handleDeleteLigneCommande}
+                  commandeStatus={commande.statut}
+                />
               ))
             ) : (
               <View style={[styles.emptyState, { backgroundColor: colors.background, borderColor: colors.border }]}>
@@ -389,90 +480,53 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   ligneCommandeCard: {
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    backgroundColor: 'transparent',
+    marginBottom: 0,
   },
-  ligneCommandeHeader: {
+  ligneCommandeContent: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  ligneCommandeMain: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
   },
-  ligneCommandeTitleContainer: {
+  ligneCommandeSub: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    flex: 1,
-  },
-  ligneCommandeIcon: {
-    marginRight: 8,
   },
   ligneCommandeTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  quantityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  ligneCommandeQuantity: {
-    fontSize: 14,
-    opacity: 0.7,
-  },
-  ligneCommandeDetails: {
-    marginTop: 4,
+    flex: 1,
+    marginRight: 12,
   },
   ligneCommandePrice: {
-    fontSize: 14,
-    fontWeight: '600',
+    textAlign: 'right',
   },
-  ingredientsContainer: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
+  ligneCommandeQuantity: {
+    marginRight: 12,
   },
-  ingredientsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
+  ligneCommandeUnitPrice: {
+    textAlign: 'right',
   },
-  ingredientsTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  ingredientItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginVertical: 2,
-  },
-  ingredientName: {
-    fontSize: 13,
-    opacity: 0.7,
-  },
-  ingredientQuantity: {
-    fontSize: 13,
-    opacity: 0.7,
-  },
-  emptyState: {
-    padding: 24,
-    borderRadius: 12,
-    alignItems: 'center',
+  deleteActionContainer: {
+    width: 90,
+    height: '100%',
     justifyContent: 'center',
-    marginTop: 8,
+    alignItems: 'center',
+  },
+  deleteAction: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  swipeableContainer: {
     marginHorizontal: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
-    minHeight: 120,
+    marginBottom: 1,
+    backgroundColor: 'transparent',
   },
   navBar: {
     flexDirection: 'row',
@@ -516,5 +570,46 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    marginBottom: 12,
+    fontSize: 16,
+  },
+  retryButton: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#F27E42',
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: 'white',
+  },
+  emptyState: {
+    padding: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+    minHeight: 120,
   },
 }); 

@@ -12,8 +12,7 @@ const fetchCsrfToken = async (): Promise<string | null> => {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
         'Referer': BASE_URL,
-      },
-      timeout: 15000, // Augmenter le timeout pour cette requête importante
+      }
     });
     
     console.log('Réponse CSRF reçue:', response.data);
@@ -47,8 +46,6 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
     'Referer': BASE_URL,
   },
-  timeout: 15000, // Augmenter le timeout pour toutes les requêtes
-  // Activer withCredentials pour envoyer les cookies de session avec les requêtes cross-origin
   withCredentials: true,
 });
 

@@ -150,6 +150,7 @@ export default function CommandesScreen() {
     return (
       <ThemedView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
+        <ThemedText style={styles.loadingText}>Chargement des commandes...</ThemedText>
       </ThemedView>
     );
   }
@@ -288,6 +289,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
   },
   errorContainer: {
     flex: 1,

@@ -3,14 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import { Salle } from "@/models/Salle";
 import { salleService } from "@/services/entities/salleService";
 
-const sallesCache = new Map<number, {
-    data: Salle[];
-    timestamp: number;
-}>();
-
-const CACHE_DURATION = 30000; // 30 secondes
-const FETCH_TIMEOUT = 15000; // 15 secondes timeout
-
 export function useSalles(restaurantId: number | null) {
     const [salles, setSalles] = useState<Salle[]>([]);
     const [loading, setLoading] = useState(true);
@@ -21,16 +13,6 @@ export function useSalles(restaurantId: number | null) {
     const fetchSalles = async (forceRefresh = false) => {
         if (!restaurantId) {
             setSalles([]);
-            setLoading(false);
-            return;
-        }
-
-        // Vérifier si nous avons des données en cache valides
-        const cachedData = sallesCache.get(restaurantId);
-        const now = Date.now();
-        
-        if (!forceRefresh && cachedData && (now - cachedData.timestamp) < CACHE_DURATION) {
-            setSalles(cachedData.data);
             setLoading(false);
             return;
         }
@@ -47,13 +29,6 @@ export function useSalles(restaurantId: number | null) {
         try {
             const response = await salleService.getByRestaurantId(restaurantId);
             const data = response.data;
-
-            // Mettre à jour le cache
-            sallesCache.set(restaurantId, {
-                data,   
-                timestamp: now,
-            });
-
             setSalles(data);
             setLoading(false);
             setError(null);

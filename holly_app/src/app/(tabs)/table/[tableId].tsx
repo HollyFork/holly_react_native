@@ -83,31 +83,26 @@ export default function TableCommandeScreen() {
     router.back();
   };
 
-  if (loading) {
+  if (loading && !refreshing) {
     return (
-      <ThemedView style={styles.container}>
-        <HeaderWithSidebars restaurantName={selectedRestaurant?.nom_restaurant || ''} />
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
+      <ThemedView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <ThemedText style={styles.loadingText}>Chargement des détails de la table...</ThemedText>
       </ThemedView>
     );
   }
 
   if (error) {
     return (
-      <ThemedView style={styles.container}>
-        <HeaderWithSidebars restaurantName={selectedRestaurant?.nom_restaurant || ''} />
-        <View style={styles.centered}>
-          <CustomIcon name="alert-circle" size={48} color={colors.error} />
-          <ThemedText style={[styles.errorText, { color: colors.error }]}>{error}</ThemedText>
-          <TouchableOpacity
-            style={[styles.retryButton, { backgroundColor: colors.primary }]}
-            onPress={handleRefresh}
-          >
-            <ThemedText style={styles.retryButtonText}>Réessayer</ThemedText>
-          </TouchableOpacity>
-        </View>
+      <ThemedView style={styles.errorContainer}>
+        <CustomIcon name="alert-circle" size={48} color={colors.error} />
+        <ThemedText style={styles.errorText}>{error}</ThemedText>
+        <TouchableOpacity 
+          style={styles.retryButton}
+          onPress={fetchCommande}
+        >
+          <ThemedText style={styles.retryButtonText}>Réessayer</ThemedText>
+        </TouchableOpacity>
       </ThemedView>
     );
   }
@@ -224,7 +219,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
   },
   header: {
     flexDirection: 'row',
@@ -303,24 +297,39 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
   errorText: {
+    marginBottom: 12,
+    fontSize: 16,
     textAlign: 'center',
-    marginTop: 8,
+  },
+  retryButton: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#F27E42',
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: 'white',
   },
   emptyText: {
     textAlign: 'center',
     fontStyle: 'italic',
     marginTop: 20,
-  },
-  retryButton: {
-    marginTop: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
   },
 }); 

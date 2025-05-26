@@ -13,7 +13,7 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, TouchableOpacity, View, useColorScheme } from 'react-native';
 
 export default function AjouterArticleScreen() {
-  const { commandeId } = useLocalSearchParams();
+  const { commandeId, from } = useLocalSearchParams();
   const [selectedArticle, setSelectedArticle] = useState<number | null>(null);
   const [selectedCategorie, setSelectedCategorie] = useState<number | null>(null);
   const [quantite, setQuantite] = useState('1');
@@ -66,7 +66,7 @@ export default function AjouterArticleScreen() {
       };
 
       await ligneCommandeService.addLigneCommande(nouvelleLigne);
-      router.back();
+      router.push(`/commande/${commandeId}?from=${from || 'commandes'}`);
     } catch (error) {
       console.error('Erreur lors de l\'ajout de la ligne de commande:', error);
       Alert.alert('Erreur', 'Impossible d\'ajouter la ligne de commande');
@@ -142,16 +142,11 @@ export default function AjouterArticleScreen() {
                 <View style={styles.loadingContainer}>
                   <ThemedText>Chargement des articles...</ThemedText>
                 </View>
-              ) : (
+              ) : selectedCategorie ? (
                 articlesByCategorie
-                  .filter(({ categorie }) => !selectedCategorie || categorie.id === selectedCategorie)
+                  .filter(({ categorie }) => categorie.id === selectedCategorie)
                   .map(({ categorie, articles }) => (
                     <View key={categorie.id}>
-                      {selectedCategorie === null && (
-                        <ThemedText style={[styles.categorieTitle, { color: colors.textSecondary }]}>
-                          {categorie.nom}
-                        </ThemedText>
-                      )}
                       {articles.map((article) => (
                         <TouchableOpacity
                           key={article.id}
@@ -180,6 +175,12 @@ export default function AjouterArticleScreen() {
                       ))}
                     </View>
                   ))
+              ) : (
+                <View style={styles.emptyStateContainer}>
+                  <ThemedText style={{ color: colors.textSecondary }}>
+                    Veuillez sélectionner une catégorie
+                  </ThemedText>
+                </View>
               )}
             </ScrollView>
           </View>
@@ -420,5 +421,10 @@ const styles = StyleSheet.create({
   },
   minusIcon: {
     borderRadius: 1,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 }); 

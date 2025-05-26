@@ -8,7 +8,6 @@ import { useNotes } from '@/hooks/useNotes';
 import { useReservations } from '@/hooks/useReservations';
 import { useStocks } from '@/hooks/useStocks';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { FontAwesome } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -65,52 +64,22 @@ function DashboardCardV2({ icon, title, value, subtitle, onPress }: DashboardCar
 
 export default function DashboardScreen() {
   const { colors, isDark } = useThemeColor();
+  const { selectedRestaurant, loading: restaurantsLoading, error: restaurantsError, refreshRestaurants } = useRestaurants();
+  const { reservations, loading: reservationsLoading, error: reservationsError, refreshReservations } = useReservations(selectedRestaurant?.id_restaurant || null);
+  const { notes, loading: notesLoading, error: notesError, refreshNotes } = useNotes(selectedRestaurant?.id_restaurant || null);
+  const { commandes, loading: commandesLoading, error: commandesError, refreshCommandes } = useCommandes(selectedRestaurant?.id_restaurant || null);
+  const { stocks, loading: stocksLoading, error: stocksError, refreshStocks } = useStocks(selectedRestaurant?.id_restaurant || null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [loadingTimeout, setLoadingTimeout] = useState(false);
   const [allDataReady, setAllDataReady] = useState(false);
-  
-  const { 
-    selectedRestaurant,
-    loading: restaurantsLoading,
-    error: restaurantsError,
-    refreshRestaurants
-  } = useRestaurants();
 
-  const {
-    loading: reservationsLoading,
-    error: reservationsError,
-    getFutureReservations,
-    refreshReservations
-  } = useReservations(selectedRestaurant?.id_restaurant || null);
-
-  const {
-    notes,
-    loading: notesLoading,
-    error: notesError,
-    refreshNotes
-  } = useNotes(selectedRestaurant?.id_restaurant || null);
-
-  const {
-    commandes,
-    loading: commandesLoading,
-    error: commandesError,
-    refreshCommandes
-  } = useCommandes(selectedRestaurant?.id_restaurant || null);
-
-  const {
-    stocks,
-    loading: stocksLoading,
-    error: stocksError,
-    refreshStocks
-  } = useStocks(selectedRestaurant?.id_restaurant || null);
-
-  // Vérifier quand toutes les données sont prêtes
+  // Vérifier si toutes les données sont prêtes
   useEffect(() => {
-    const allLoading = restaurantsLoading || reservationsLoading || notesLoading || commandesLoading || stocksLoading;
-    if (!allLoading) {
-      console.log('Toutes les données sont chargées');
-      setAllDataReady(true);
-    }
+    const checkAllDataReady = () => {
+      const isLoading = restaurantsLoading || reservationsLoading || notesLoading || commandesLoading || stocksLoading;
+      setAllDataReady(!isLoading);
+    };
+
+    checkAllDataReady();
   }, [restaurantsLoading, reservationsLoading, notesLoading, commandesLoading, stocksLoading]);
 
   const handleRefresh = async () => {
@@ -141,79 +110,40 @@ export default function DashboardScreen() {
       console.error('Erreur lors du rafraîchissement:', error);
     } finally {
       setIsRefreshing(false);
-      setLoadingTimeout(false);
     }
   };
 
-  // Gérer le timeout du chargement
-  useEffect(() => {
-    if (restaurantsLoading || (selectedRestaurant && (reservationsLoading || notesLoading || commandesLoading || stocksLoading))) {
-      console.log('Démarrage du timer de timeout pour le chargement des données...');
-      const timer = setTimeout(() => {
-        console.log('Timeout atteint pour le chargement des données');
-        setLoadingTimeout(true);
-      }, 10000); // Réduire à 10 secondes pour réagir plus rapidement
-      
-      return () => {
-        console.log('Nettoyage du timer de timeout');
-        clearTimeout(timer);
-      };
-    }
-  }, [restaurantsLoading, reservationsLoading, notesLoading, commandesLoading, stocksLoading, selectedRestaurant]);
+  // Utiliser les données disponibles, même partielles
+  const futureReservations = reservations ? reservations.filter(res => {
+    const today = new Date().toISOString().split('T')[0];
+    return res.date_heure && res.date_heure.split('T')[0] === today;
+  }) : [];
+  const commandesEnCours = commandes ? commandes.filter(cmd => cmd.statut === 'EN_COURS').length : 0;
+  const stocksEnAlerte = stocks ? stocks.filter(stock => stock.quantite_en_stock <= stock.seuil_alerte).length : 0;
 
-  // Si nous avons un restaurant sélectionné et toutes les données sont prêtes, ou un timeout s'est produit
-  // mais nous avons déjà un restaurant, afficher le dashboard même avec des données partielles
-  const shouldShowDashboard = selectedRestaurant && (allDataReady || (loadingTimeout && !restaurantsLoading));
-
-  // Afficher l'erreur si une erreur survient dans le chargement des restaurants
-  const hasRestaurantError = restaurantsError;
-  if (hasRestaurantError) {
+  // Afficher le chargement lorsque n'importe quelle donnée est en cours de chargement
+  if (!allDataReady && !isRefreshing) {
     return (
-      <ThemedView style={[styles.container, styles.centered]}>
-        <FontAwesome name="exclamation-triangle" size={50} color={colors.error} />
-        <ThemedText style={styles.errorText}>
-          {restaurantsError || "Erreur lors du chargement des restaurants"}
-        </ThemedText>
-        <TouchableOpacity 
-          style={styles.refreshButton} 
-          onPress={handleRefresh}
-        >
-          <ThemedText style={styles.refreshButtonText}>Réessayer</ThemedText>
-        </TouchableOpacity>
-      </ThemedView>
-    );
-  }
-
-  // Afficher le chargement uniquement lorsque les restaurants sont en cours de chargement
-  // et que le timeout n'est pas atteint
-  if (restaurantsLoading && !loadingTimeout) {
-    return (
-      <ThemedView style={[styles.container, styles.centered]}>
+      <ThemedView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
         <ThemedText style={styles.loadingText}>Chargement des données...</ThemedText>
       </ThemedView>
     );
   }
 
-  // Afficher le message de timeout uniquement si nous n'avons pas encore de restaurant sélectionné
-  if (loadingTimeout && !shouldShowDashboard) {
+  // Afficher l'erreur si une erreur survient dans le chargement des restaurants
+  if (restaurantsError) {
     return (
-      <ThemedView style={[styles.container, styles.centered]}>
-        <FontAwesome name="clock-o" size={50} color={colors.primary} />
-        <ThemedText style={styles.timeoutText}>
-          Le chargement des données prend plus de temps que prévu...
-        </ThemedText>
-        <ThemedText style={styles.timeoutSubText}>
-          Vérifiez votre connexion internet ou réessayez plus tard.
+      <ThemedView style={styles.errorContainer}>
+        <CustomIcon name="alert-circle" size={48} color={colors.error} />
+        <ThemedText style={styles.errorText}>
+          {restaurantsError || "Erreur lors du chargement des restaurants"}
         </ThemedText>
         <TouchableOpacity 
-          style={styles.refreshButton} 
-          onPress={() => {
-            setLoadingTimeout(false);
-            handleRefresh();
-          }}
+          style={[styles.retryButton, { backgroundColor: colors.primary }]} 
+          onPress={handleRefresh}
         >
-          <ThemedText style={styles.refreshButtonText}>Réessayer</ThemedText>
+          <ThemedText style={styles.retryButtonText}>Réessayer</ThemedText>
         </TouchableOpacity>
       </ThemedView>
     );
@@ -221,35 +151,28 @@ export default function DashboardScreen() {
 
   if (!selectedRestaurant) {
     return (
-      <ThemedView style={[styles.container, styles.centered]}>
-        <FontAwesome name="exclamation-circle" size={50} color={colors.error} />
+      <ThemedView style={styles.errorContainer}>
+        <CustomIcon name="alert-circle" size={48} color={colors.error} />
         <ThemedText style={styles.errorText}>
           Aucun restaurant disponible
         </ThemedText>
         <TouchableOpacity 
-          style={styles.refreshButton} 
+          style={[styles.retryButton, { backgroundColor: colors.primary }]} 
           onPress={handleRefresh}
         >
-          <ThemedText style={styles.refreshButtonText}>Réessayer</ThemedText>
+          <ThemedText style={styles.retryButtonText}>Réessayer</ThemedText>
         </TouchableOpacity>
       </ThemedView>
     );
   }
 
-  // Utiliser les données disponibles, même partielles
-  const futureReservations = getFutureReservations ? getFutureReservations() : [];
-  const commandesEnCours = commandes ? commandes.filter(cmd => cmd.statut === 'EN_COURS').length : 0;
-  const stocksEnAlerte = stocks ? stocks.filter(stock => stock.quantite_en_stock <= stock.seuil_alerte).length : 0;
-
   return (
-    <ThemedView variant="background" style={styles.container}>
+    <ThemedView style={styles.container}>
       <HeaderWithSidebars restaurantName={selectedRestaurant.nom_restaurant} />
       
-      {/* Contenu principal */}
-      <ScrollView 
-        style={[stylesV2.content, { backgroundColor: colors.background }]}
-        contentContainerStyle={stylesV2.contentContainer}
-        showsVerticalScrollIndicator={false}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -317,7 +240,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  centered: {
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -325,136 +256,31 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
   },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   errorText: {
-    marginVertical: 20,
+    marginTop: 12,
     fontSize: 16,
     textAlign: 'center',
     paddingHorizontal: 30,
   },
-  timeoutText: {
+  retryButton: {
     marginTop: 20,
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    paddingHorizontal: 30,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
   },
-  timeoutSubText: {
-    marginTop: 10,
-    fontSize: 14,
-    textAlign: 'center',
-    paddingHorizontal: 30,
-    opacity: 0.8,
-  },
-  refreshButton: {
-    marginTop: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    backgroundColor: '#2196F3',
-    borderRadius: 5,
-  },
-  refreshButtonText: {
+  retryButtonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: 'bold',
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  mainTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  dashboardGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  card: {
-    width: '48%',
-    height: 96,
-    marginBottom: 16,
-    padding: 14,
-    paddingTop: 10,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(242, 126, 66, 0.1)',
-    shadowColor: 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  cardIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 2,
-    alignSelf: 'center',
-  },
-  cardContent: {
-    flex: 1,
-    marginLeft: 8,
-    flexDirection: 'column',
-    justifyContent: 'center',
-    paddingRight: 5,
-    height: '100%',
-    paddingTop: 10,
-  },
-  cardTitle: {
-    fontSize: 12,
-    color: '#888',
-    fontWeight: '400',
-    marginBottom: 4,
-    marginTop: 0,
-  },
-  cardValue: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginTop: 8,
-    lineHeight: 26,
-  },
-  cardValueUnit: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginLeft: 2,
-    lineHeight: 22,
-  },
-  cardSubtitle: {
-    fontSize: 11,
-    opacity: 0.6,
-    lineHeight: 14,
-  },
-  cardArrow: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    fontWeight: '600',
   },
 });
 
 const stylesV2 = StyleSheet.create({
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: 18,
-    paddingBottom: 32,
-  },
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
