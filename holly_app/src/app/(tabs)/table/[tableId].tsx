@@ -190,7 +190,7 @@ export default function TableCommandeScreen() {
                 <View key={ligne.id} style={styles.articleItem}>
                   <View style={styles.articleInfo}>
                     <ThemedText style={styles.articleName}>
-                      {ligne.article.nom}
+                      {ligne.article?.nom ?? 'Article inconnu'}
                     </ThemedText>
                     <ThemedText style={[styles.articleQuantity, { color: colors.textSecondary }]}>
                       x{ligne.quantite}

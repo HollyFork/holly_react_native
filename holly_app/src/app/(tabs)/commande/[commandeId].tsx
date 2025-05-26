@@ -1,151 +1,16 @@
-import { Button } from '@/components/common/Button';
+// import { Button } from '@/components/common/Button';
 import { CustomIcon } from '@/components/common/CustomIcon';
 import { HeaderWithSidebars } from '@/components/common/HeaderWithSidebars';
 import { ThemedText } from '@/components/common/ThemedText';
 import { Colors } from '@/constants/Colors';
 import { useRestaurants } from '@/contexts/RestaurantContext';
-import { useArticles } from '@/hooks/useArticles';
-import { Article } from '@/models/Article';
 import { Commande } from '@/models/Commande';
 import { LigneCommande } from '@/models/LigneCommande';
 import { commandeService } from '@/services/entities/commandeService';
 import { ligneCommandeService } from '@/services/entities/ligneCommandeService';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, TextInput, TouchableOpacity, View, useColorScheme } from 'react-native';
-
-const AddLigneCommandeModal = ({ 
-  visible, 
-  onClose, 
-  commandeId, 
-  onSuccess 
-}: { 
-  visible: boolean; 
-  onClose: () => void; 
-  commandeId: number; 
-  onSuccess: () => void;
-}) => {
-  const [selectedArticle, setSelectedArticle] = useState<number | null>(null);
-  const [quantite, setQuantite] = useState('1');
-  const [loading, setLoading] = useState(false);
-  const { articles, loading: articlesLoading } = useArticles();
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
-
-  const handleSubmit = async () => {
-    if (!selectedArticle || !quantite || isNaN(Number(quantite)) || Number(quantite) <= 0) {
-      Alert.alert('Erreur', 'Veuillez sélectionner un article et une quantité valide');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const article = articles.find((a: Article) => a.id === selectedArticle);
-      if (!article) throw new Error('Article non trouvé');
-
-      const nouvelleLigne: Omit<LigneCommande, 'id' | 'article' | 'created_at' | 'updated_at'> = {
-        commande_id: commandeId,
-        article_id: selectedArticle,
-        quantite: Number(quantite),
-        prix_unitaire: article.prix,
-      };
-
-      await ligneCommandeService.addLigneCommande(nouvelleLigne);
-      onSuccess();
-      onClose();
-      setSelectedArticle(null);
-      setQuantite('1');
-    } catch (error) {
-      console.error('Erreur lors de l\'ajout de la ligne de commande:', error);
-      Alert.alert('Erreur', 'Impossible d\'ajouter la ligne de commande');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
-    >
-      <View style={[styles.modalContainer, { backgroundColor: colors.background + '99' }]}>
-        <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-            <ThemedText style={styles.modalTitle}>Ajouter un article</ThemedText>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <CustomIcon name="close" size={24} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.modalBody}>
-            <View style={styles.formGroup}>
-              <ThemedText style={[styles.label, { color: colors.textSecondary }]}>Article</ThemedText>
-              <ScrollView style={[styles.articlesList, { backgroundColor: colors.background }]}>
-                {articlesLoading ? (
-                  <ThemedText>Chargement des articles...</ThemedText>
-                ) : (
-                  articles.map((article) => (
-                    <TouchableOpacity
-                      key={article.id}
-                      style={[
-                        styles.articleItem,
-                        selectedArticle === article.id && { backgroundColor: colors.primary + '15' }
-                      ]}
-                      onPress={() => setSelectedArticle(article.id)}
-                    >
-                      <ThemedText style={[
-                        styles.articleName,
-                        selectedArticle === article.id && { color: colors.primary }
-                      ]}>
-                        {article.nom}
-                      </ThemedText>
-                      <ThemedText style={[styles.articlePrice, { color: colors.textSecondary }]}>
-                        {Number(article.prix).toFixed(2)} €
-                      </ThemedText>
-                    </TouchableOpacity>
-                  ))
-                )}
-              </ScrollView>
-            </View>
-
-            <View style={styles.formGroup}>
-              <ThemedText style={[styles.label, { color: colors.textSecondary }]}>Quantité</ThemedText>
-              <TextInput
-                style={[styles.input, { 
-                  backgroundColor: colors.background,
-                  color: colors.text,
-                  borderColor: colors.border
-                }]}
-                value={quantite}
-                onChangeText={setQuantite}
-                keyboardType="numeric"
-                placeholder="1"
-                placeholderTextColor={colors.textSecondary}
-              />
-            </View>
-          </View>
-
-          <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
-            <Button
-              title="Annuler"
-              onPress={onClose}
-              variant="secondary"
-              style={styles.footerButton}
-            />
-            <Button
-              title="Ajouter"
-              onPress={handleSubmit}
-              loading={loading}
-              style={styles.footerButton}
-            />
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-};
+import { ScrollView, StyleSheet, TouchableOpacity, View, useColorScheme } from 'react-native';
 
 export default function CommandeDetailsScreen() {
   const { commandeId, from } = useLocalSearchParams();
@@ -157,7 +22,6 @@ export default function CommandeDetailsScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const { selectedRestaurant } = useRestaurants();
-  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
 
   const fetchCommandeDetails = async () => {
     if (!commandeId || isNaN(Number(commandeId))) {
@@ -274,7 +138,7 @@ export default function CommandeDetailsScreen() {
               shadowOpacity: 0.25,
               shadowRadius: 3.84,
             }]}
-            onPress={() => setIsAddModalVisible(true)}
+            onPress={() => router.push(`/commande/${commandeId}/ajouter-article`)}
             activeOpacity={0.7}
           >
             <CustomIcon name="plus" size={20} color={colors.surface} />
@@ -442,13 +306,6 @@ export default function CommandeDetailsScreen() {
           </View>
         </View>
       </ScrollView>
-
-      <AddLigneCommandeModal
-        visible={isAddModalVisible}
-        onClose={() => setIsAddModalVisible(false)}
-        commandeId={Number(commandeId)}
-        onSuccess={fetchCommandeDetails}
-      />
     </View>
   );
 }
@@ -642,77 +499,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 60,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    width: '100%',
-    maxHeight: '80%',
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  closeButton: {
-    padding: 4,
-  },
-  modalBody: {
-    padding: 16,
-  },
-  formGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  articlesList: {
-    maxHeight: 200,
-    borderRadius: 8,
-  },
-  articleItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
-  },
-  articleName: {
-    fontSize: 16,
-  },
-  articlePrice: {
-    fontSize: 14,
-  },
-  input: {
-    height: 48,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    fontSize: 16,
-  },
-  modalFooter: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    padding: 16,
-    borderTopWidth: 1,
-    gap: 12,
-  },
-  footerButton: {
-    minWidth: 100,
   },
   addButton: {
     flexDirection: 'row',
