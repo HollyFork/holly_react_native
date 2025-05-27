@@ -1,5 +1,6 @@
+import { Colors } from '@/constants/Colors';
 import React, { useState } from 'react';
-import { Dimensions, StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
+import { Dimensions, StyleSheet, TouchableOpacity, View, ViewStyle, useColorScheme } from 'react-native';
 import Animated, {
   interpolate,
   useAnimatedStyle,
@@ -10,7 +11,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MENU_RADIUS = 80; // Rayon réduit pour le menu circulaire
-const BUTTON_SIZE = 48; // Taille réduite du bouton
+const BUTTON_SIZE = 44; // Modifié pour correspondre au bouton d'ajout
 const START_ANGLE = Math.PI; // Commence à gauche (π radians)
 const END_ANGLE = Math.PI * 1.5; // Se termine en haut (1.5π radians)
 
@@ -27,6 +28,8 @@ interface FloatingMenuProps {
 export const FloatingMenu: React.FC<FloatingMenuProps> = ({ items }) => {
   const [isOpen, setIsOpen] = useState(false);
   const animation = useSharedValue(0);
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -76,7 +79,11 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({ items }) => {
       {items.map((item, index) => (
         <Animated.View
           key={item.label}
-          style={[styles.menuItem, menuItemStyle(index)]}
+          style={[
+            styles.menuItem,
+            { backgroundColor: colors.primary },
+            menuItemStyle(index)
+          ]}
         >
           <TouchableOpacity
             style={styles.menuItemButton}
@@ -85,17 +92,21 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({ items }) => {
               toggleMenu();
             }}
           >
-            <Icon name={item.icon} size={22} color="#FFFFFF" />
+            <Icon name={item.icon} size={22} color={colors.surface} />
           </TouchableOpacity>
         </Animated.View>
       ))}
       
-      <Animated.View style={[styles.mainButton, mainButtonStyle]}>
+      <Animated.View style={[
+        styles.mainButton,
+        { backgroundColor: colors.primary },
+        mainButtonStyle
+      ]}>
         <TouchableOpacity
           style={styles.mainButtonInner}
           onPress={toggleMenu}
         >
-          <Icon name="menu" size={22} color="#FFFFFF" />
+          <Icon name="menu" size={22} color={colors.surface} />
         </TouchableOpacity>
       </Animated.View>
     </View>
@@ -105,7 +116,7 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({ items }) => {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 20, // Augmenté de 32 à 64 pour descendre le menu
+    bottom: 32, // Augmenté de 32 à 64 pour descendre le menu
     right: 30, // Remis à droite
     zIndex: 1000,
   },
@@ -113,17 +124,13 @@ const styles = StyleSheet.create({
     width: BUTTON_SIZE,
     height: BUTTON_SIZE,
     borderRadius: BUTTON_SIZE / 2,
-    backgroundColor: '#F27E42',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   mainButtonInner: {
     width: '100%',
@@ -136,17 +143,13 @@ const styles = StyleSheet.create({
     width: BUTTON_SIZE,
     height: BUTTON_SIZE,
     borderRadius: BUTTON_SIZE / 2,
-    backgroundColor: '#F27E42',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   menuItemButton: {
     width: '100%',

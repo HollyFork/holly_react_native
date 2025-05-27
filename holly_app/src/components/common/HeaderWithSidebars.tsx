@@ -127,6 +127,7 @@ export function HeaderWithSidebars({ restaurantName }: HeaderWithSidebarsProps) 
           selectedRestaurantId={selectedRestaurant?.id_restaurant.toString() || ''}
           onRestaurantSelect={handleRestaurantSelect}
           onClose={() => setIsSidebarOpen(false)}
+          onRestaurantsChange={refreshRestaurants}
         />
         
         <Navbar 

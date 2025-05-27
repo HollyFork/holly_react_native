@@ -11,7 +11,7 @@ import { CreateCommandeDTO } from '@/models/Commande';
 import { Salle } from '@/models/Salle';
 import { Table } from '@/models/Table';
 import { commandeService } from '@/services/entities/commandeService';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { GestureHandlerRootView, PanGestureHandler, PanGestureHandlerGestureEvent, PinchGestureHandler, PinchGestureHandlerGestureEvent } from 'react-native-gesture-handler';
@@ -22,10 +22,158 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// SalleDetails component remains unchanged from your provided code
-function SalleDetails({ salle, isDropdown = false }: { salle: Salle; isDropdown?: boolean }) {
+// Ajouter ces constantes et types au début du fichier, après les imports
+const VIEW_TYPES = {
+  GRID: 'grid',
+  LIST: 'list'
+} as const;
+
+type ViewType = typeof VIEW_TYPES[keyof typeof VIEW_TYPES];
+
+// Déplacer le composant TableListView avant SalleDetails
+function TableListView({ tables, onTablePress }: { tables: Table[]; onTablePress: (tableId: number, isOccupied: boolean) => void }) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+
+  return (
+    <ScrollView style={styles.tableListContainer}>
+      <View style={styles.tableListGrid}>
+        {tables.map((table) => (
+          <TouchableOpacity
+            key={table.id}
+            style={[
+              styles.tableListItem,
+              { 
+                backgroundColor: table.is_occupied 
+                  ? 'rgba(255, 0, 0, 0.15)'
+                  : 'rgba(0, 255, 0, 0.15)',
+                borderColor: table.is_occupied 
+                  ? 'rgba(255, 0, 0, 0.5)'
+                  : 'rgba(0, 255, 0, 0.5)',
+              }
+            ]}
+            onPress={() => onTablePress(table.id, table.is_occupied)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.tableListInfo}>
+              <View style={styles.tableListHeader}>
+                <ThemedText style={[
+                  styles.tableListNumber,
+                  { color: table.is_occupied ? '#FF0000' : '#00FF00' }
+                ]}>
+                  Table {table.numero}
+                </ThemedText>
+                <View style={styles.tableListStatus}>
+                  <CustomIcon 
+                    name={table.is_occupied ? "clock-time-four" : "check"} 
+                    size={16} 
+                    color={table.is_occupied ? '#FF0000' : '#00FF00'} 
+                  />
+                  <ThemedText style={[
+                    styles.tableListStatusText,
+                    { color: table.is_occupied ? '#FF0000' : '#00FF00' }
+                  ]}>
+                    {table.is_occupied ? 'Occupée' : 'Libre'}
+                  </ThemedText>
+                </View>
+              </View>
+              <View style={styles.tableListDetails}>
+                <View style={styles.tableListDetail}>
+                  <CustomIcon name="account-group" size={16} color={colors.textSecondary} />
+                  <ThemedText style={[styles.tableListDetailText, { color: colors.textSecondary }]}>
+                    {table.capacity} personnes
+                  </ThemedText>
+                </View>
+                {table.current_commande_id && (
+                  <View style={styles.tableListDetail}>
+                    <CustomIcon name="note-text" size={16} color={colors.textSecondary} />
+                    <ThemedText style={[styles.tableListDetailText, { color: colors.textSecondary }]}>
+                      Commande #{table.current_commande_id}
+                    </ThemedText>
+                  </View>
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </ScrollView>
+  );
+}
+
+// Modifier le composant SalleDetails
+function SalleDetails({ salle, isDropdown = false, onSalleSelect }: { salle: Salle; isDropdown?: boolean; onSalleSelect?: (salleId: number) => void }) {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+  const [viewType, setViewType] = useState<ViewType>(VIEW_TYPES.LIST);
+  const { tables, loading, error, refreshTables } = useTables(salle.id);
+  const { selectedRestaurant } = useRestaurants();
+
+  const handleTablePress = async (tableId: number, isOccupied: boolean) => {
+    try {
+      if (isOccupied) {
+        // Trouver la table dans le tableau des tables
+        const table = tables.find(t => t.id === tableId);
+        
+        if (table?.current_commande_id) {
+          // Si on a l'ID de la commande, on navigue directement avec l'ID de la salle
+          router.navigate(`/(tabs)/commande/${table.current_commande_id}?from=tables&salleId=${salle.id}` as any);
+        } else {
+          // Si par erreur il n'y a pas d'ID de commande pour une table occupée
+          console.error('Table occupée sans ID de commande');
+          // On rafraîchit les tables pour mettre à jour l'état
+          await refreshTables();
+          // On affiche un message à l'utilisateur
+          alert('Cette table n\'a pas de commande en cours. L\'état de la table va être mis à jour.');
+        }
+      } else {
+        // Si la table est libre, on crée une nouvelle commande
+        if (!selectedRestaurant) {
+          throw new Error('Restaurant non sélectionné');
+        }
+
+        const nouvelleCommande: CreateCommandeDTO = {
+          restaurant_id: selectedRestaurant.id_restaurant,
+          table_id: tableId,
+          created_by_id: 1, // À remplacer par l'ID de l'employé connecté
+          statut: 'EN_COURS',
+          nb_articles: 0,
+          montant: 0
+        };
+
+        const { data } = await commandeService.createCommande(nouvelleCommande);
+        router.navigate(`/(tabs)/commande/${data.id}?from=tables&salleId=${salle.id}` as any);
+      }
+      // Rafraîchir les tables après chaque action
+      await refreshTables();
+    } catch (err) {
+      console.error('Erreur lors de la gestion de la commande:', err);
+      // Rafraîchir les tables même en cas d'erreur
+      await refreshTables();
+    }
+  };
+
+  const toggleViewType = () => {
+    setViewType((current: ViewType) => current === VIEW_TYPES.GRID ? VIEW_TYPES.LIST : VIEW_TYPES.GRID);
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.salleDetailsContainer, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.salleDetailsContainer, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ThemedText style={{ color: colors.error }}>Erreur de chargement des tables</ThemedText>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.salleDetailsContainer}>
@@ -43,9 +191,27 @@ function SalleDetails({ salle, isDropdown = false }: { salle: Salle; isDropdown?
               Étage {salle.etage}
             </ThemedText>
           </View>
+          {!isDropdown && (
+            <TouchableOpacity
+              style={[styles.viewToggleButton, { backgroundColor: colors.surface }]}
+              onPress={toggleViewType}
+            >
+              <CustomIcon 
+                name={viewType === VIEW_TYPES.GRID ? "view-dashboard" : "menu"} 
+                size={24} 
+                color={colors.primary} 
+              />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
-      {!isDropdown && <GridView salleId={salle.id} />}
+      {!isDropdown && (
+        viewType === VIEW_TYPES.GRID ? (
+          <GridView salleId={salle.id} onSalleSelect={onSalleSelect} />
+        ) : (
+          <TableListView tables={tables} onTablePress={handleTablePress} />
+        )
+      )}
     </View>
   );
 }
@@ -154,13 +320,19 @@ function StaticGrid({ size, colorScheme }: { size: number; colorScheme: 'light' 
   );
 }
 
-function GridView({ salleId }: { salleId: number }) {
+interface GridViewProps {
+    salleId: number;
+    onSalleSelect?: (salleId: number) => void;
+}
+
+function GridView({ salleId, onSalleSelect }: GridViewProps) {
     const colorScheme = useColorScheme() as 'light' | 'dark';
     const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
     const { tables, loading, error, refreshTables } = useTables(salleId);
     const { selectedRestaurant } = useRestaurants();
     const { width, height } = useWindowDimensions();
     const isLandscape = width > height;
+    const params = useLocalSearchParams();
     
     const scale = useSharedValue(1);
     const translateX = useSharedValue(0);
@@ -283,8 +455,8 @@ function GridView({ salleId }: { salleId: number }) {
                 const table = tables.find(t => t.id === tableId);
                 
                 if (table?.current_commande_id) {
-                    // Si on a l'ID de la commande, on navigue directement
-                    router.navigate(`/(tabs)/commande/${table.current_commande_id}?from=tables` as any);
+                    // Si on a l'ID de la commande, on navigue directement avec l'ID de la salle
+                    router.navigate(`/(tabs)/commande/${table.current_commande_id}?from=tables&salleId=${salleId}` as any);
                 } else {
                     // Si par erreur il n'y a pas d'ID de commande pour une table occupée
                     console.error('Table occupée sans ID de commande');
@@ -309,7 +481,7 @@ function GridView({ salleId }: { salleId: number }) {
                 };
 
                 const { data } = await commandeService.createCommande(nouvelleCommande);
-                router.navigate(`/(tabs)/commande/${data.id}?from=tables` as any);
+                router.navigate(`/(tabs)/commande/${data.id}?from=tables&salleId=${salleId}` as any);
             }
             // Rafraîchir les tables après chaque action
             await refreshTables();
@@ -320,11 +492,19 @@ function GridView({ salleId }: { salleId: number }) {
         }
     };
 
-    // Remplacer l'effet de focus par useFocusEffect
+    // Modifier l'effet useFocusEffect
     useFocusEffect(
         React.useCallback(() => {
+            if (params.salleId) {
+                const salleIdFromParams = parseInt(params.salleId as string);
+                if (!isNaN(salleIdFromParams)) {
+                    // Utiliser la fonction de callback pour mettre à jour la sélection
+                    // qui sera passée depuis le composant parent
+                    onSalleSelect?.(salleIdFromParams);
+                }
+            }
             refreshTables();
-        }, [])
+        }, [params.salleId, onSalleSelect])
     );
   
     if (loading) {
@@ -502,6 +682,10 @@ export default function SallesScreen() {
     }
   }, [salles, loading]);
 
+  const handleSalleSelect = (salleId: number) => {
+    setSelectedSalle(salleId);
+  };
+
   if (loading && !isRefreshing) {
     return (
       <ThemedView style={styles.loadingContainer}>
@@ -647,7 +831,7 @@ export default function SallesScreen() {
                       </View>
                       {/* Show details in dropdown only if selected AND isDropdownVisible (which it is if this renders) */}
                       {selectedSalle === salle.id && (
-                        <SalleDetails salle={salle} isDropdown={true} />
+                        <SalleDetails salle={salle} isDropdown={true} onSalleSelect={handleSalleSelect} />
                       )}
                     </View>
                   </TouchableOpacity>
@@ -666,7 +850,10 @@ export default function SallesScreen() {
               styles.selectedSalleContainer,
               isLandscape && styles.selectedSalleContainerLandscape
             ]}>
-              <SalleDetails salle={selectedSalleData} />
+              <SalleDetails 
+                salle={selectedSalleData} 
+                onSalleSelect={handleSalleSelect}
+              />
             </View>
           )}
 
@@ -976,5 +1163,73 @@ const styles = StyleSheet.create({
   gridContent: {
     position: 'absolute',
     zIndex: 2,
+  },
+  viewToggleButton: {
+    padding: 8,
+    borderRadius: 8,
+    marginLeft: 'auto',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  tableListContainer: {
+    flex: 1,
+    marginTop: 16,
+  },
+  tableListGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    padding: 16,
+  },
+  tableListItem: {
+    width: '48%', // Pour avoir 2 cartes par ligne avec un espace entre elles
+    borderRadius: 12,
+    padding: 12, // Réduit légèrement le padding pour mieux s'adapter
+    borderWidth: 1.5,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    marginBottom: 12, // Ajout d'une marge en bas pour l'espacement vertical
+  },
+  tableListInfo: {
+    gap: 8, // Réduit l'espacement pour mieux s'adapter à la nouvelle taille
+  },
+  tableListHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap', // Permet au contenu de passer à la ligne si nécessaire
+    gap: 4, // Ajoute un espacement si le contenu passe à la ligne
+  },
+  tableListNumber: {
+    fontSize: 16, // Légèrement plus petit pour mieux s'adapter
+    fontWeight: '600',
+  },
+  tableListStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  tableListStatusText: {
+    fontSize: 12, // Plus petit pour mieux s'adapter
+    fontWeight: '500',
+  },
+  tableListDetails: {
+    gap: 6, // Réduit l'espacement
+  },
+  tableListDetail: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6, // Réduit l'espacement
+  },
+  tableListDetailText: {
+    fontSize: 12, // Plus petit pour mieux s'adapter
+    flex: 1, // Permet au texte de prendre l'espace disponible
+    flexWrap: 'wrap', // Permet au texte de passer à la ligne si nécessaire
   },
 });

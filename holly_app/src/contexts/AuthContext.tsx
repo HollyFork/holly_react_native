@@ -1,5 +1,6 @@
 import { User } from '@models/User';
 import { authService } from '@services/auth/authService';
+import { router } from 'expo-router';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 // Interface pour les identifiants de connexion, si non définie ailleurs
@@ -21,7 +22,21 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // True au début pour vérifier l'état initial
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Fonction pour gérer la déconnexion et la redirection
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+      setUser(null);
+      setIsAuthenticated(false);
+      router.replace('/auth/login');
+    } catch (error) {
+      console.error("AuthProvider: Erreur lors de la déconnexion", error);
+      // Forcer la redirection même en cas d'erreur
+      router.replace('/auth/login');
+    }
+  };
 
   useEffect(() => {
     const checkAuthState = async () => {
@@ -30,18 +45,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const authenticated = await authService.isAuthenticated();
         console.log("AuthProvider: isAuthenticated (initial) ->", authenticated);
-        setIsAuthenticated(authenticated);
+        
         if (authenticated) {
           const currentUser = await authService.getCurrentUser();
           console.log("AuthProvider: getCurrentUser (initial) ->", currentUser);
-          setUser(currentUser);
+          
+          if (currentUser) {
+            setUser(currentUser);
+            setIsAuthenticated(true);
+          } else {
+            // Si pas d'utilisateur trouvé malgré l'authentification, déconnexion
+            await handleLogout();
+          }
         } else {
           setUser(null);
+          setIsAuthenticated(false);
+          // Rediriger vers login si on n'est pas déjà sur la page de login
+          if (!router.canGoBack()) {
+            router.replace('/auth/login');
+          }
         }
       } catch (e) {
         console.error("AuthProvider: Erreur lors de la vérification de l'état d'auth initial", e);
-        setIsAuthenticated(false);
-        setUser(null);
+        await handleLogout();
       } finally {
         setIsLoading(false);
         console.log("AuthProvider: Vérification initiale de l'état d'auth terminée.");
@@ -52,47 +78,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (credentials: LoginCredentials) => {
     console.log("AuthProvider: Tentative de connexion...");
-    // setIsLoading(true); // Peut être activé si vous voulez un indicateur de chargement global pendant la connexion
     try {
       const response = await authService.login(credentials);
       if (response && response.data) {
-        // Assurer que l'objet utilisateur a bien la propriété 'id'
-        // L'API renvoie id_user, authService le mappe déjà sur 'id' dans currentUserData
-        // et dans la valeur retournée par getCurrentUser.
-        // La réponse directe de login pourrait nécessiter un mappage ici si ce n'est pas déjà fait.
-        // authService.login stocke déjà l'utilisateur avec la bonne structure (id au lieu de id_user)
-        const loggedInUser = await authService.getCurrentUser(); // Récupérer l'utilisateur formaté par authService
-        setUser(loggedInUser); 
-        setIsAuthenticated(true);
-        console.log("AuthProvider: Connexion réussie, utilisateur:", loggedInUser);
+        const loggedInUser = await authService.getCurrentUser();
+        if (loggedInUser) {
+          setUser(loggedInUser);
+          setIsAuthenticated(true);
+          console.log("AuthProvider: Connexion réussie, utilisateur:", loggedInUser);
+          router.replace('/(tabs)/dashboard');
+        } else {
+          throw new Error("Erreur lors de la récupération des données utilisateur");
+        }
       } else {
-        // Ce cas ne devrait pas arriver si authService.login lève une erreur en cas d'échec
         throw new Error("Réponse de connexion invalide ou vide");
       }
-      // setIsLoading(false);
     } catch (error) {
       console.error("AuthProvider: Erreur de connexion", error);
-      setIsAuthenticated(false);
-      setUser(null);
-      // setIsLoading(false);
-      throw error; 
+      await handleLogout();
+      throw error;
     }
   };
 
-  const logout = async () => {
-    console.log("AuthProvider: Tentative de déconnexion...");
-    // setIsLoading(true);
-    try {
-      await authService.logout();
-      setUser(null);
-      setIsAuthenticated(false);
-      console.log("AuthProvider: Déconnexion réussie.");
-      // setIsLoading(false);
-    } catch (error) {
-      console.error("AuthProvider: Erreur de déconnexion", error);
-      // setIsLoading(false);
-    }
-  };
+  const logout = handleLogout;
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, user, login, logout, isLoading }}>

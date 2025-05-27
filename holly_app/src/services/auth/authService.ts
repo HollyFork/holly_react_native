@@ -9,11 +9,14 @@ interface LoginCredentials {
 
 interface LoginResponse extends User {
   id_user: number; // Garder l'ID original de l'API
+  access_token: string;
+  refresh_token: string;
 }
 
 // Clés de stockage
 const USER_STORAGE_KEY = 'user_data';
-const TOKEN_STORAGE_KEY = 'auth_token';
+const ACCESS_TOKEN_KEY = 'access_token';
+const REFRESH_TOKEN_KEY = 'refresh_token';
 
 // Variable pour stocker temporairement les données de l'utilisateur
 let currentUserData: LoginResponse | null = null;
@@ -40,6 +43,8 @@ export const authService = {
         };
         currentUserData = userData;
         await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
+        await AsyncStorage.setItem(ACCESS_TOKEN_KEY, response.data.access_token);
+        await AsyncStorage.setItem(REFRESH_TOKEN_KEY, response.data.refresh_token);
       }
       return response;
     } catch (error) {
@@ -56,8 +61,11 @@ export const authService = {
       // Supprimer les données en mémoire
       currentUserData = null;
       // Supprimer les données stockées
-      await AsyncStorage.removeItem(USER_STORAGE_KEY);
-      await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
+      await AsyncStorage.multiRemove([
+        USER_STORAGE_KEY,
+        ACCESS_TOKEN_KEY,
+        REFRESH_TOKEN_KEY
+      ]);
       return Promise.resolve();
     } catch (error) {
       console.error('Erreur lors de la déconnexion:', error);
@@ -128,7 +136,7 @@ export const authService = {
       currentUserData = userDataWithId;
       await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userDataWithId));
       if (token) {
-        await AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
+        await AsyncStorage.setItem(ACCESS_TOKEN_KEY, token);
       }
     } catch (error) {
       console.error('Erreur lors de la sauvegarde des données utilisateur:', error);
@@ -141,10 +149,39 @@ export const authService = {
    */
   getAuthToken: async (): Promise<string | null> => {
     try {
-      const token = await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
-      return token || (currentUserData ? 'session_active' : null);
+      return await AsyncStorage.getItem(ACCESS_TOKEN_KEY);
     } catch (error) {
       console.error('Erreur lors de la récupération du token:', error);
+      return null;
+    }
+  },
+
+  getRefreshToken: async (): Promise<string | null> => {
+    try {
+      return await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
+    } catch (error) {
+      console.error('Erreur lors de la récupération du refresh token:', error);
+      return null;
+    }
+  },
+
+  refreshAccessToken: async (): Promise<string | null> => {
+    try {
+      const refreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
+      if (!refreshToken) {
+        throw new Error('Aucun refresh token disponible');
+      }
+
+      const response = await apiClient.post('/auth/token/refresh/', {
+        refresh: refreshToken
+      });
+
+      const newAccessToken = response.data.access;
+      await AsyncStorage.setItem(ACCESS_TOKEN_KEY, newAccessToken);
+      return newAccessToken;
+    } catch (error) {
+      console.error('Erreur lors du rafraîchissement du token:', error);
+      await authService.logout(); // Déconnexion en cas d'échec
       return null;
     }
   }

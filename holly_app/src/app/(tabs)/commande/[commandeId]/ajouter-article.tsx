@@ -4,6 +4,7 @@ import { ThemedText } from '@/components/common/ThemedText';
 import { Colors } from '@/constants/Colors';
 import { useRestaurants } from '@/contexts/RestaurantContext';
 import { useArticles } from '@/hooks/useArticles';
+import { useCategories } from '@/hooks/useCategories';
 import { Article } from '@/models/Article';
 import { CategorieArticle } from '@/models/CategorieArticle';
 import { LigneCommande } from '@/models/LigneCommande';
@@ -18,10 +19,11 @@ export default function AjouterArticleScreen() {
   const [selectedCategorie, setSelectedCategorie] = useState<number | null>(null);
   const [quantite, setQuantite] = useState('1');
   const [loading, setLoading] = useState(false);
-  const { articles, loading: articlesLoading } = useArticles();
+  const { selectedRestaurant } = useRestaurants();
+  const { articles, loading: articlesLoading } = useArticles(selectedRestaurant?.id_restaurant || null);
+  const { categories, loading: categoriesLoading } = useCategories();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
-  const { selectedRestaurant } = useRestaurants();
 
   // Grouper les articles par catégorie
   const articlesByCategorie = React.useMemo(() => {
@@ -37,10 +39,14 @@ export default function AjouterArticleScreen() {
       return acc;
     }, {} as Record<number, { categorie: CategorieArticle; articles: Article[] }>);
 
-    return Object.values(grouped).sort((a, b) => 
-      a.categorie.ordre_affichage - b.categorie.ordre_affichage
-    );
-  }, [articles]);
+    // Trier les catégories selon l'ordre d'affichage
+    const sortedCategories = categories.sort((a, b) => a.ordre_affichage - b.ordre_affichage);
+    
+    // Retourner uniquement les catégories qui ont des articles
+    return sortedCategories
+      .filter(cat => grouped[cat.id])
+      .map(cat => grouped[cat.id]);
+  }, [articles, categories]);
 
   const quantiteOptions = React.useMemo(() => 
     Array.from({ length: 20 }, (_, i) => (i + 1).toString()), 
@@ -108,39 +114,47 @@ export default function AjouterArticleScreen() {
             borderRightColor: colors.border
           }]}>
             <ScrollView>
-              {articlesByCategorie.map(({ categorie }) => (
-                <TouchableOpacity
-                  key={categorie.id}
-                  style={[
-                    styles.categorieItem,
-                    selectedCategorie === categorie.id && { 
-                      backgroundColor: colors.primary + '15',
-                      borderLeftColor: colors.primary,
-                      borderLeftWidth: 3,
-                    }
-                  ]}
-                  onPress={() => {
-                    setSelectedCategorie(categorie.id);
-                    setSelectedArticle(null);
-                  }}
-                >
-                  <ThemedText style={[
-                    styles.categorieName,
-                    selectedCategorie === categorie.id && { color: colors.primary }
-                  ]}>
-                    {categorie.nom}
-                  </ThemedText>
-                </TouchableOpacity>
-              ))}
+              {categoriesLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ThemedText>Chargement des catégories...</ThemedText>
+                </View>
+              ) : (
+                categories
+                  .sort((a, b) => a.ordre_affichage - b.ordre_affichage)
+                  .map((categorie) => (
+                    <TouchableOpacity
+                      key={categorie.id}
+                      style={[
+                        styles.categorieItem,
+                        selectedCategorie === categorie.id && { 
+                          backgroundColor: colors.primary + '15',
+                          borderLeftColor: colors.primary,
+                          borderLeftWidth: 3,
+                        }
+                      ]}
+                      onPress={() => {
+                        setSelectedCategorie(categorie.id);
+                        setSelectedArticle(null);
+                      }}
+                    >
+                      <ThemedText style={[
+                        styles.categorieName,
+                        selectedCategorie === categorie.id && { color: colors.primary }
+                      ]}>
+                        {categorie.nom}
+                      </ThemedText>
+                    </TouchableOpacity>
+                  ))
+              )}
             </ScrollView>
           </View>
 
           {/* Liste des articles */}
           <View style={[styles.articlesContainer, { backgroundColor: colors.surface }]}>
             <ScrollView>
-              {articlesLoading ? (
+              {articlesLoading || categoriesLoading ? (
                 <View style={styles.loadingContainer}>
-                  <ThemedText>Chargement des articles...</ThemedText>
+                  <ThemedText>Chargement...</ThemedText>
                 </View>
               ) : selectedCategorie ? (
                 articlesByCategorie
@@ -190,78 +204,79 @@ export default function AjouterArticleScreen() {
         <View style={[styles.bottomContainer, { 
           backgroundColor: colors.surface, 
           borderTopColor: colors.border,
-          shadowColor: colors.text,
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-          elevation: 4,
         }]}>
           <View style={styles.bottomContent}>
             <View style={styles.bottomRow}>
-              <TouchableOpacity
-                onPress={handleSubmit}
-                disabled={!selectedArticle || loading}
-                style={[
-                  styles.submitButton,
-                  { 
-                    backgroundColor: colors.primary,
-                    opacity: (!selectedArticle || loading) ? 0.5 : 1,
-                  }
-                ]}
-              >
-                {loading ? (
-                  <ActivityIndicator color={colors.surface} size="small" />
-                ) : (
-                  <CustomIcon name="plus" size={24} color={colors.surface} />
-                )}
-              </TouchableOpacity>
+              <View style={styles.leftSection}>
+                <TouchableOpacity
+                  onPress={handleSubmit}
+                  disabled={!selectedArticle || loading}
+                  style={[
+                    styles.submitButton,
+                    { 
+                      backgroundColor: colors.primary,
+                      opacity: (!selectedArticle || loading) ? 0.5 : 1,
+                    }
+                  ]}
+                >
+                  {loading ? (
+                    <ActivityIndicator color={colors.surface} size="small" />
+                  ) : (
+                    <CustomIcon name="plus" size={24} color={colors.surface} />
+                  )}
+                </TouchableOpacity>
+              </View>
 
-              <View style={styles.quantityContainer}>
-                <ThemedText style={[styles.label, { color: colors.textSecondary }]}>Qté</ThemedText>
-                <View style={[styles.quantitySelector, { 
-                  backgroundColor: colors.background,
-                  borderColor: colors.border,
-                }]}>
-                  <TouchableOpacity
-                    onPress={() => {
-                      const newValue = Math.max(1, Number(quantite) - 1);
-                      setQuantite(newValue.toString());
-                    }}
-                    style={[styles.quantityButton, { borderRightColor: colors.border }]}
-                    disabled={Number(quantite) <= 1}
-                  >
-                    <View style={[
-                      styles.minusIcon,
-                      { 
-                        backgroundColor: Number(quantite) <= 1 ? colors.textSecondary : colors.primary,
-                        width: 12,
-                        height: 2,
-                      }
-                    ]} />
-                  </TouchableOpacity>
-                  
-                  <View style={styles.quantityDisplay}>
-                    <ThemedText style={[styles.quantityText, { color: colors.text }]}>
-                      {quantite}
-                    </ThemedText>
+              <View style={styles.centerSection}>
+                <View style={styles.quantityContainer}>
+                  <ThemedText style={[styles.label, { color: colors.textSecondary }]}></ThemedText>
+                  <View style={[styles.quantitySelector, { 
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                  }]}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        const newValue = Math.max(1, Number(quantite) - 1);
+                        setQuantite(newValue.toString());
+                      }}
+                      style={[styles.quantityButton, { borderRightColor: colors.border }]}
+                      disabled={Number(quantite) <= 1}
+                    >
+                      <View style={[
+                        styles.minusIcon,
+                        { 
+                          backgroundColor: Number(quantite) <= 1 ? colors.textSecondary : colors.primary,
+                          width: 12,
+                          height: 2,
+                        }
+                      ]} />
+                    </TouchableOpacity>
+                    
+                    <View style={styles.quantityDisplay}>
+                      <ThemedText style={[styles.quantityText, { color: colors.text }]}>
+                        {quantite}
+                      </ThemedText>
+                    </View>
+
+                    <TouchableOpacity
+                      onPress={() => {
+                        const newValue = Math.min(20, Number(quantite) + 1);
+                        setQuantite(newValue.toString());
+                      }}
+                      style={[styles.quantityButton, { borderLeftColor: colors.border }]}
+                      disabled={Number(quantite) >= 20}
+                    >
+                      <CustomIcon 
+                        name="plus" 
+                        size={20} 
+                        color={Number(quantite) >= 20 ? colors.textSecondary : colors.primary} 
+                      />
+                    </TouchableOpacity>
                   </View>
-
-                  <TouchableOpacity
-                    onPress={() => {
-                      const newValue = Math.min(20, Number(quantite) + 1);
-                      setQuantite(newValue.toString());
-                    }}
-                    style={[styles.quantityButton, { borderLeftColor: colors.border }]}
-                    disabled={Number(quantite) >= 20}
-                  >
-                    <CustomIcon 
-                      name="plus" 
-                      size={20} 
-                      color={Number(quantite) >= 20 ? colors.textSecondary : colors.primary} 
-                    />
-                  </TouchableOpacity>
                 </View>
               </View>
+
+              <View style={styles.rightSection} />
             </View>
           </View>
         </View>
@@ -358,25 +373,36 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     borderTopWidth: 1,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 16,
+    paddingBottom: Platform.OS === 'ios' ? 32 : 24,
+    paddingTop: 8,
   },
   bottomContent: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 20,
   },
   bottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    gap: 8,
-    paddingRight: 64,
+    width: '100%',
+    paddingLeft: 16,
+  },
+  leftSection: {
+    width: 44,
+    marginRight: 48,
+  },
+  centerSection: {
+    flex: 0,
+    alignItems: 'center',
+  },
+  rightSection: {
+    flex: 1,
   },
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     minWidth: 120,
-    marginLeft: 8,
   },
   label: {
     fontSize: 14,

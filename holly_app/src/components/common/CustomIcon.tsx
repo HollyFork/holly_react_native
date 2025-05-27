@@ -31,7 +31,9 @@ export type IconName =
   | 'currency-eur'            // eurosign.circle.fill
   | 'note-text'               // note.text
   | 'plus'                    // plus.circle.fill
-  | 'fridge-alert-outline';   // fridge.fill
+  | 'fridge-alert-outline'    // fridge.alert.outline
+  | 'pencil-outline'          // pencil.outline
+  | 'delete-outline';         // delete.outline
 
 interface CustomIconProps {
   name: IconName;
@@ -60,7 +62,9 @@ export function CustomIcon({ name, size = 24, color, style }: CustomIconProps) {
     'note': 'note-text',
     'add': 'plus',
     'restaurant': 'silverware-fork-knife',
-    'category': 'fridge-alert-outline'
+    'category': 'fridge-alert-outline',
+    'edit': 'pencil-outline',
+    'delete': 'delete-outline'
   };
 
   const iconName = iconNameMap[name] || name;

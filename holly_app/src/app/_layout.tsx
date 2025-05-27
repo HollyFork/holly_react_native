@@ -1,20 +1,24 @@
 import { PortalProvider } from '@gorhom/portal';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
-import { FloatingMenu } from '@/components/common/FloatingMenu';
 import ThemedView from '@/components/common/ThemedView';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { RestaurantProvider } from '@/contexts/RestaurantContext';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
 // Composant séparé pour le menu flottant
 const FloatingMenuWithAuth = () => {
+  // Retourne null pour masquer visuellement le menu flottant
+  return null;
+  
+  // Le code existant est commenté pour référence future
+  /*
   const router = useRouter();
   const { logout } = useAuth();
 
@@ -40,6 +44,7 @@ const FloatingMenuWithAuth = () => {
   ];
 
   return <FloatingMenu items={menuItems} />;
+  */
 };
 
 export default function RootLayout() {
@@ -61,8 +66,8 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
         <AuthProvider>
-          <PortalProvider>
-            <RestaurantProvider>
+          <RestaurantProvider>
+            <PortalProvider>
               <ThemedView variant="background" style={{ flex: 1 }}>
                 <StatusBar style={isDark ? 'light' : 'dark'} />
                 <Stack
@@ -79,8 +84,8 @@ export default function RootLayout() {
                 </Stack>
                 <FloatingMenuWithAuth />
               </ThemedView>
-            </RestaurantProvider>
-          </PortalProvider>
+            </PortalProvider>
+          </RestaurantProvider>
         </AuthProvider>
       </ThemeProvider>
     </GestureHandlerRootView>

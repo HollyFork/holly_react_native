@@ -3,8 +3,12 @@ import apiClient from '../utils/api';
 
 const BASE_PATH = '/articles';
 
-export const getAll = async () => {
-    return apiClient.get<Article[]>(`${BASE_PATH}/`);
+export const getAll = async (queryParams?: string) => {
+    return apiClient.get<Article[]>(`${BASE_PATH}/${queryParams ? queryParams : ''}`);
+};
+
+export const getByRestaurantId = async (restaurantId: number) => {
+    return apiClient.get<Article[]>(`${BASE_PATH}/?restaurant_id=${restaurantId}`);
 };
 
 export const getById = async (id: number) => {
@@ -16,7 +20,7 @@ export const create = async (article: Omit<Article, 'id'>) => {
 };
 
 export const update = async (id: number, article: Partial<Article>) => {
-    return apiClient.put<Article>(`${BASE_PATH}/${id}/`, article);
+    return apiClient.patch<Article>(`${BASE_PATH}/${id}/`, article);
 };
 
 export const remove = async (id: number) => {
@@ -26,6 +30,7 @@ export const remove = async (id: number) => {
 export const articleService = {
     getAll,
     getById,
+    getByRestaurantId,
     create,
     update,
     remove,

@@ -104,7 +104,7 @@ export default function CommandesScreen() {
   const { commandes, loading: isLoading, error, refreshCommandes } = useCommandes(selectedRestaurant?.id_restaurant || null);
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<CommandeFilter>('all');
+  const [activeFilter, setActiveFilter] = useState<CommandeFilter>('EN_COURS');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleRefresh = async () => {
