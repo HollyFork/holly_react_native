@@ -305,7 +305,11 @@ export default function ArticlesScreen() {
                   .filter(({ categorie }) => categorie.id === selectedCategorie)
                   .map(({ categorie, articles }) => (
                     <View key={categorie.id}>
-                      {articles.map(renderArticleItem)}
+                      {articles.map((article) => (
+                        <View key={article.id}>
+                          {renderArticleItem(article)}
+                        </View>
+                      ))}
                     </View>
                   ))
               ) : (

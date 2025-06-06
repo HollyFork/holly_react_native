@@ -3,4 +3,5 @@ export interface CategorieArticle {
     nom: string;
     ordre_affichage: number;
     description?: string;
+    restaurant_id?: number;
 } 

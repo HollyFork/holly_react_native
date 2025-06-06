@@ -7,6 +7,7 @@ interface CreateCategoryDTO {
   nom: string;
   ordre_affichage: number;
   description?: string;
+  restaurant_id: number;
 }
 
 export function useCategories() {
@@ -46,11 +47,29 @@ export function useCategories() {
         nom: categorie.nom.charAt(0).toUpperCase() + categorie.nom.slice(1), // Première lettre en majuscule
         ordre_affichage: Math.max(1, Number(categorie.ordre_affichage) || 1), // S'assurer que c'est un nombre positif
         description: categorie.description || undefined, // Optionnel
+        restaurant_id: selectedRestaurant.id_restaurant, // Ajouter l'ID du restaurant
       };
 
       console.log('Création de catégorie avec les données:', categorieData);
       const response = await categorieService.create(categorieData);
-      await fetchCategories(); // Rafraîchir la liste après création
+      
+      // Mise à jour optimiste de l'état local
+      const newCategory = response.data;
+      setCategories(prevCategories => {
+        // Vérifier si la catégorie n'existe pas déjà
+        const exists = prevCategories.some(cat => cat.id === newCategory.id);
+        if (!exists) {
+          const updatedCategories = [...prevCategories, newCategory];
+          return updatedCategories.sort((a, b) => a.ordre_affichage - b.ordre_affichage);
+        }
+        return prevCategories;
+      });
+      
+      // Rafraîchir la liste complète pour s'assurer de la cohérence
+      setTimeout(() => {
+        fetchCategories();
+      }, 100);
+      
       return response.data;
     } catch (err) {
       console.error('Erreur lors de la création de la catégorie:', err);
