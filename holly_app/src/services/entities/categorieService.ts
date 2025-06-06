@@ -16,6 +16,8 @@ export const getById = async (id: number) => {
 };
 
 export const create = async (categorie: Omit<CategorieArticle, 'id'>) => {
+    console.log('📤 Données envoyées à l\'API pour création de catégorie:', JSON.stringify(categorie, null, 2));
+    console.log('📤 URL complète:', `${BASE_PATH}/`);
     return apiClient.post<CategorieArticle>(`${BASE_PATH}/`, categorie);
 };
 

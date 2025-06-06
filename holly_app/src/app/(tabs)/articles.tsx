@@ -11,17 +11,17 @@ import { articleService } from '@/services/entities/articleService';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Keyboard,
-    Modal,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View
+  ActivityIndicator,
+  Alert,
+  Keyboard,
+  Modal,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 
@@ -86,9 +86,10 @@ export default function ArticlesScreen() {
       
       setModalVisible(false);
       Alert.alert('Succès', 'Catégorie créée avec succès');
-    } catch (error) {
-      console.error('Erreur lors de la création de la catégorie:', error);
-      Alert.alert('Erreur', 'Impossible de créer la catégorie');
+    } catch (error: any) {
+      // Ne pas logger l'erreur ici car elle est déjà loggée dans useCategories
+      const errorMessage = error?.message || 'Impossible de créer la catégorie';
+      Alert.alert('Erreur', errorMessage);
     } finally {
       setIsSubmitting(false);
     }

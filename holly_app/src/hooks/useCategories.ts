@@ -42,13 +42,27 @@ export function useCategories() {
         throw new Error('Aucun restaurant sélectionné');
       }
 
+      // Validation des données d'entrée
+      if (!categorie.nom || categorie.nom.trim().length === 0) {
+        throw new Error('Le nom de la catégorie est requis');
+      }
+
+      if (categorie.nom.trim().length > 100) {
+        throw new Error('Le nom de la catégorie ne peut pas dépasser 100 caractères');
+      }
+
       // Formater les données selon le format attendu par l'API
       const categorieData: CreateCategoryDTO = {
-        nom: categorie.nom.charAt(0).toUpperCase() + categorie.nom.slice(1), // Première lettre en majuscule
+        nom: categorie.nom.trim().charAt(0).toUpperCase() + categorie.nom.trim().slice(1), // Première lettre en majuscule
         ordre_affichage: Math.max(1, Number(categorie.ordre_affichage) || 1), // S'assurer que c'est un nombre positif
-        description: categorie.description || undefined, // Optionnel
+        description: categorie.description?.trim() || undefined, // Optionnel, mais nettoyé
         restaurant_id: selectedRestaurant.id_restaurant, // Ajouter l'ID du restaurant
       };
+
+      // Validation finale des données formatées
+      if (!categorieData.restaurant_id || categorieData.restaurant_id <= 0) {
+        throw new Error('ID du restaurant invalide');
+      }
 
       console.log('Création de catégorie avec les données:', categorieData);
       const response = await categorieService.create(categorieData);
@@ -71,8 +85,23 @@ export function useCategories() {
       }, 100);
       
       return response.data;
-    } catch (err) {
-      console.error('Erreur lors de la création de la catégorie:', err);
+    } catch (err: any) {
+      // Logging détaillé de l'erreur pour le débogage
+      console.error('Erreur lors de la création de la catégorie:', {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+        config: err?.config?.url
+      });
+      
+      // Relancer l'erreur avec plus de contexte
+      if (err?.response?.status === 400) {
+        const errorMessage = err?.response?.data?.message || 
+                           err?.response?.data?.error || 
+                           'Données invalides pour la création de la catégorie';
+        throw new Error(errorMessage);
+      }
+      
       throw err;
     }
   };
