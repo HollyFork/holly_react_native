@@ -1,4 +1,5 @@
-import { BASE_URL } from '@env';
+// import { BASE_URL } from '@env';
+const BASE_URL = 'https://hollyfork.org'
 
 // Vérification immédiate de BASE_URL
 if (!BASE_URL) {
