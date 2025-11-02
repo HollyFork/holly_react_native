@@ -11,7 +11,7 @@ import SwiftUI
 struct Holly_Fork_Watch_OS_Watch_AppApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            NotificationView()
         }
     }
 }
