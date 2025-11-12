@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 public struct MapScreenIpad: View {
@@ -9,6 +8,8 @@ public struct MapScreenIpad: View {
     
     @State private var isLoading: Bool = false
     @State private var enteredCode: String = StringConstants.EMPTY_STRING
+    @State private var showTableScreen: Bool = false
+    @State private var selectedTable: String = ""
     
     public init(onHomeButtonClicked: @escaping () -> Void,
                 onTableButtonClicked: @escaping (String) -> Void) {
@@ -40,16 +41,30 @@ public struct MapScreenIpad: View {
                                 .stroke(Color.black, lineWidth: 1)
                         )
                         
-                        Image("test_map_restaurant_ipad")
-                            .resizable()
-                            .scaledToFill()
+                        if showTableScreen {
+                            TableScreen(
+                                tableNumber: selectedTable,
+                                onBackToMap: {
+                                    showTableScreen = false
+                                    tableNumberInput = ""
+                                }
+                            )
                             .frame(width: geometry.size.width * 0.7,
                                    height: geometry.size.height * 0.8)
-                            .clipped()
+                        } else {
+                            Image("test_map_restaurant_ipad")
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: geometry.size.width * 0.7,
+                                       height: geometry.size.height * 0.8)
+                                .clipped()
+                        }
                         
                         
                         HStack {
                             CustomIconButton(systemName: "house.fill") {
+                                showTableScreen = false
+                                tableNumberInput = ""
                                 onHomeButtonClicked()
                             }
                             Spacer()
@@ -106,7 +121,10 @@ public struct MapScreenIpad: View {
                                 handlePrintdButtonClicked()
                             },
                             onSearchTapped: {
-                                onTableButtonClicked(tableNumberInput)
+                                if !tableNumberInput.isEmpty {
+                                    selectedTable = tableNumberInput
+                                    showTableScreen = true
+                                }
                             }
                         )
                         .scaleEffect(0.6)
@@ -141,6 +159,4 @@ public struct MapScreenIpad: View {
             enteredCode.append(digit)
         }
     }
-    
-    
 }
