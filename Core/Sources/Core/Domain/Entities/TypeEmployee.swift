@@ -1,3 +1,5 @@
+import Foundation
+
 public struct TypeEmploye {
     let id: Int
     let nom: String

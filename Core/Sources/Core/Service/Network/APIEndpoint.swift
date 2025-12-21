@@ -3,6 +3,7 @@ import Foundation
 enum APIEndpoint: String {
     
     case login = "auth/login"
+    case verifyPin = "auth/verify-pin"
     case logout = "auth/logout/"
     case refresh = "auth/token/refresh/"
     case restaurants = "restaurants"

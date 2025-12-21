@@ -35,7 +35,7 @@ struct HollyFork_App: App {
     }
     
     private func logoutIfNeeded() {
-        guard Core.KeychainManager.shared.getToken() != nil else { return }
+      /*  guard Core.KeychainManager.shared.getToken() != nil else { return }
         logoutUseCase.execute { result in
             switch result {
             case .success(let message):
@@ -43,6 +43,6 @@ struct HollyFork_App: App {
             case .failure(let error):
                 print("Erreur logout:", error.localizedDescription)
             }
-        }
+        } */
     }
 }

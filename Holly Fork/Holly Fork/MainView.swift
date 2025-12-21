@@ -4,7 +4,7 @@ import Core
 
 struct MainView: View {
     
-    @State private var currentScreen: Core.Screen = .hollyForkSplashScreen
+    @State private var currentScreen: Core.Screen = .home
     @State private var tableNumber: String = Core.StringConstants.EMPTY_STRING
     
     
@@ -14,6 +14,14 @@ struct MainView: View {
         return Core.LoginUseCaseImpl(loginRepository: loginRepository  )
     }()
     
+    let employeeLoginUseCase: Core.EmployeeLoginUseCase = {
+        let employeeLoginRemoteDataSource: Core.EmployeeLoginRemoteDataSource = Core.EmployeeLoginRemoteDataSourceImpl()
+        let employeeLoginRepository: Core.EmployeeLoginRepository = Core.EmployeeLoginRepositoryImpl(employeeLoginRemoteDataSource: employeeLoginRemoteDataSource)
+        return Core.EmployeeLoginUseCaseImpl(
+            employeeLoginRepository: employeeLoginRepository
+        )
+    }()
+
     var body: some View {
         ZStack {
             switch currentScreen {
@@ -44,7 +52,8 @@ struct MainView: View {
                 EmployeeLoginScreen(
                     onLoginEmployeeSuccess: {
                         currentScreen = .home
-                    }
+                    },
+                    employeeLoginUseCase: employeeLoginUseCase
                 ).transition(.opacity)
                 
             case .home:

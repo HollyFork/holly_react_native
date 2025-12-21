@@ -67,6 +67,43 @@ class NetworkManager {
             }
         }.resume()
     }
+    
+    
+    func postRequestWithAuth<T: Codable>(
+        to endpoint: APIEndpoint,
+        body: T,
+        completion: @escaping (Result<Data, Error>) -> Void
+    ) {
+        guard let url = endpoint.url else {
+            completion(.failure(NSError(domain: "Invalid URL", code: 0)))
+            return
+        }
+        
+        guard let token = KeychainManager.shared.getToken() else {
+            completion(.failure(NSError(domain: "No token", code: 401)))
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        request.httpBody = try? JSONEncoder().encode(body)
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            guard let data = data else {
+                completion(.failure(NSError(domain: "No data", code: 0)))
+                return
+            }
+            completion(.success(data))
+        }.resume()
+    }
+    
 }
 
 

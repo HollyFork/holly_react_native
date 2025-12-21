@@ -16,7 +16,7 @@ let package = Package(
         .target(
             name: "Core",
             dependencies: [],
-            path: "Sources/Core"  // ← Important
+            path: "Sources/Core"
         ),
     ]
 )

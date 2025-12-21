@@ -7,8 +7,6 @@ public enum ColorConstants {
     public static let primaryOrange = Color(argb: 0xFFFF8F04)
     public static let backgroundWhite = Color(argb: 0xFFFFFFFF)
 
-    
-    
     public static let blue250 = Color(argb: 0xFF212A56)
     public static let blue200 = Color(argb: 0xFF00338E)
     public static let blue150 = Color(argb: 0xFF2163D8)

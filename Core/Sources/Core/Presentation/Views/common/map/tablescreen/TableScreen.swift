@@ -6,8 +6,8 @@ public struct TableScreen: View {
     var onBackToMap: () -> Void
     
     @State private var selectedCategory: String? = nil
+    @State private var showPaymentSheet = false
     
-    // TODO: Call EndPoint for data TEST
     let subMenus: [String: [SubMenuItem]] = [
         "Soft": [
             SubMenuItem(name: "Coca", color: .red),
@@ -67,7 +67,7 @@ public struct TableScreen: View {
                         SectionView(title: "Direct")
                         SectionView(title: "À Suivre 1")
                         SectionView(title: "À Suivre 2")
-                        Spacer()
+
                     }
                     .frame(width: geometry.size.width * 0.33)
                     .background(Color.white)
@@ -77,7 +77,6 @@ public struct TableScreen: View {
                     
                     VStack {
                         if let selected = selectedCategory, let items = subMenus[selected] {
-                            // Affiche la grille si une catégorie est sélectionnée
                             Text(selected)
                                 .font(.system(size: 18, weight: .bold))
                                 .padding(.top, 8)
@@ -225,7 +224,31 @@ public struct TableScreen: View {
                                     selectedCategory = nil
                                 }
                             }
+                            Button(action: {
+                                showPaymentSheet = true
+                            }) {
+                                HStack(spacing: 8) {
+                                    Image("ic_payment_check_point")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 24, height: 24)
+                                    Text("Payer")
+                                        .font(.system(size: 18, weight: .semibold))
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(ColorConstants.primaryOrange)
+                                .foregroundColor(.white)
+                                .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(ColorConstants.primaryOrange, lineWidth: 1)
+                                )
+                            }
                         }
+
+                       
+
                     }
                     .frame(width: geometry.size.width * 0.33)
                     .background(Color.white)
@@ -234,6 +257,9 @@ public struct TableScreen: View {
             }
         }
         .background(Color.white)
+        .sheet(isPresented: $showPaymentSheet) {
+            CustomPaymentBottomSheet(tableNumber: tableNumber)
+        }
     }
 }
 
