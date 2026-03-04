@@ -1,0 +1,36 @@
+import Foundation
+
+public struct ShiftResponse: Codable, Identifiable {
+    public let id: Int
+    public let employe: Int
+    public let restaurant: Int
+    public let date_debut: String // ISO 8601 String
+    public let date_fin: String   // ISO 8601 String
+    public let type_shift: String
+    public let notes: String?     // Optionnel
+    
+    public init(
+        id: Int,
+        employe: Int,
+        restaurant: Int,
+        date_debut: String,
+        date_fin: String,
+        type_shift: String,
+        notes: String?
+    ) {
+        self.id = id
+        self.employe = employe
+        self.restaurant = restaurant
+        self.date_debut = date_debut
+        self.date_fin = date_fin
+        self.type_shift = type_shift
+        self.notes = notes
+    }
+}
+
+public struct ShiftsResponseWrapper: Codable {
+    let count: Int
+    let next: String?
+    let previous: String?
+    let results: [ShiftResponse]
+}
