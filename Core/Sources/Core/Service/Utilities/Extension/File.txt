@@ -1,0 +1,48 @@
+No parameters
+
+Request body
+
+application/json
+Example Value
+Schema
+{
+  "client_name": "string",
+  "party_size": 0,
+  "datetime": "2026-03-05T21:54:51.508Z",
+  "phone_number": "string",
+  "salle_id": 0
+}
+Responses
+Code	Description	Links
+201	
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "id": 0,
+  "client_name": "string",
+  "party_size": 0,
+  "datetime": "2026-03-05T21:54:51.582Z",
+  "phone_number": "string",
+  "salle": {
+    "id": 0,
+    "name": "string",
+    "restaurant": {
+      "restaurant_id": 0,
+      "name": "string",
+      "address": "string",
+      "postal_code": "string",
+      "city": "string",
+      "phone_number": "string",
+      "siret": "91087579079612",
+      "naf_code": "string",
+      "pin": "string",
+      "logo_url": "string"
+    },
+    "capacity": 0,
+    "floor": 0,
+    "description": "string"
+  },
