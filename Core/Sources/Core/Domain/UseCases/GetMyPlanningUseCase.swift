@@ -1,19 +1,29 @@
-import Foundation
+//
+//  GetMyPlanningUseCase.swift
+//  Core
+//
+//  Created by Hadj Rabah on 06/03/2026.
+//
 
 
-public protocol EmployeeLoginUseCase {
-    func execute(pin: String, deviceToken: String) async throws -> EmployeeLogin
-}
+class GetMyPlanningUseCase {
 
-public class EmployeeLoginUseCaseImpl: EmployeeLoginUseCase {
-    
-    private let repository: EmployeeLoginRepository
-    
-    public init(repository: EmployeeLoginRepository) {
+    private let repository: PlanningRepository
+
+    init(repository: PlanningRepository) {
         self.repository = repository
     }
-    
-    public func execute(pin: String, deviceToken: String) async throws -> EmployeeLogin {
-        return try await repository.loginEmployee(pin: pin, deviceToken: deviceToken)
+
+    func execute(
+        employeId: Int,
+        restaurantId: Int?,
+        week: String
+    ) async throws -> Planning {
+
+        try await repository.getMyPlanning(
+            employeId: employeId,
+            restaurantId: restaurantId,
+            week: week
+        )
     }
 }
