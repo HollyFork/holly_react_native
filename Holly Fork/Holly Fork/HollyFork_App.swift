@@ -3,17 +3,10 @@ import Core
 
 @main
 struct HollyFork_App: App {
-    
     @Environment(\.scenePhase) private var scenePhase
     @UIApplicationDelegateAdaptor(Core.AppDelegate.self) var appDelegate
-
-    let logoutUseCase: Core.LogoutUseCase = {
-        let logoutRemoteDataSource: Core.LogoutRemoteDataSourceImpl = Core.LogoutRemoteDataSourceImpl()
-        let logoutRepository: Core.LogoutRepositoryImpl = Core.LogoutRepositoryImpl(remoteDataSource: logoutRemoteDataSource)
-        return Core.LogoutUseCaseImpl(repository: logoutRepository )
-    }()
-
     
+    // DI simplifiée - pas dans App
     var body: some Scene {
         WindowGroup {
             MainView()
@@ -24,25 +17,23 @@ struct HollyFork_App: App {
                         OrientationManager.lockOrientation(.landscapeRight, andRotateTo: .landscapeRight)
                     }
                 }
-
         }
-
         .onChange(of: scenePhase) { newPhase in
             if newPhase == .background || newPhase == .inactive {
-                logoutIfNeeded()
+                handleAppBackground()
             }
         }
     }
     
-    private func logoutIfNeeded() {
-      /*  guard Core.KeychainManager.shared.getToken() != nil else { return }
-        logoutUseCase.execute { result in
-            switch result {
-            case .success(let message):
-                print("Logout automatique:", message)
-            case .failure(let error):
-                print("Erreur logout:", error.localizedDescription)
+    // MARK: - Private (dehors du body)
+    private func handleAppBackground() {
+        // Logout auto si background prolongé
+        DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
+            if KeychainManager.shared.getToken() != nil {
+                // Logout silencieux
+                KeychainManager.shared.clearAll()
+                print("🔒 Auto-logout en background")
             }
-        } */
+        }
     }
 }

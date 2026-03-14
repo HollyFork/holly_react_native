@@ -1,97 +1,74 @@
-
 import Foundation
 import Security
 
-public class KeychainManager {
-    
+public final class KeychainManager {
+
     public static let shared = KeychainManager()
     private init() {}
-    
-    private let service = "com.yourapp.token"
-    
-    public func saveToken(_ token: String) -> Bool {
-        guard let data = token.data(using: .utf8) else { return false }
-        
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: "accessToken",
-            kSecValueData as String: data
-        ]
-        
-        SecItemDelete(query as CFDictionary)
-        let status = SecItemAdd(query as CFDictionary, nil)
-        return status == errSecSuccess
-        
-    }
-    
-    public func getToken() -> String? {
-        
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: "accessToken",
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
-        
-        var item: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &item)
-        guard status == errSecSuccess,
-              let data = item as? Data,
-              let token = String(data: data, encoding: .utf8) else {
-            return nil
-        }
-        
-        return token
-        
-    }
-    
-    public func deleteToken() {
-        
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: "accessToken"
-        ]
-        
-        SecItemDelete(query as CFDictionary)
-        
-    }
-    
-    public func saveRefreshToken(_ token: String) -> Bool {
-        guard let data = token.data(using: .utf8) else { return false }
-        
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: "refreshToken",
-            kSecValueData as String: data
-        ]
-        
-        SecItemDelete(query as CFDictionary)
-        let status = SecItemAdd(query as CFDictionary, nil)
-        return status == errSecSuccess
+
+    // MARK: - Keys
+    private enum Key: String {
+        case deviceToken  = "com.hollyfork.device_token"
+        case accessToken  = "com.hollyfork.access_token"
+        case refreshToken = "com.hollyfork.refresh_token"
     }
 
-    public func getRefreshToken() -> String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: "refreshToken",
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
-        
-        var item: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &item)
-        guard status == errSecSuccess,
-              let data = item as? Data,
-              let token = String(data: data, encoding: .utf8) else {
-            return nil
-        }
-        
-        return token
+    // MARK: - Device Token
+    public func saveDeviceToken(_ token: String) { save(token, for: .deviceToken) }
+    public func getDeviceToken() -> String?        { get(.deviceToken) }
+    public func deleteDeviceToken()                { delete(.deviceToken) }
+
+    // MARK: - Access Token
+    public func saveToken(_ token: String)  { save(token, for: .accessToken) }
+    public func getToken() -> String?        { get(.accessToken) }
+    public func deleteToken()                { delete(.accessToken) }
+
+    // MARK: - Refresh Token
+    public func saveRefreshToken(_ token: String) { save(token, for: .refreshToken) }
+    public func getRefreshToken() -> String?       { get(.refreshToken) }
+    public func deleteRefreshToken()               { delete(.refreshToken) }
+
+    // MARK: - Helpers
+    public func clearAuthTokens() {
+        deleteToken()
+        deleteRefreshToken()
     }
 
+    public func clearAll() {
+        clearAuthTokens()
+        deleteDeviceToken()
+    }
+
+    // MARK: - Private Keychain CRUD
+    private func save(_ value: String, for key: Key) {
+        guard let data = value.data(using: .utf8) else { return }
+        let query: [String: Any] = [
+            kSecClass as String:       kSecClassGenericPassword,
+            kSecAttrAccount as String: key.rawValue,
+            kSecValueData as String:   data
+        ]
+        SecItemDelete(query as CFDictionary)
+        SecItemAdd(query as CFDictionary, nil)
+    }
+
+    private func get(_ key: Key) -> String? {
+        let query: [String: Any] = [
+            kSecClass as String:       kSecClassGenericPassword,
+            kSecAttrAccount as String: key.rawValue,
+            kSecReturnData as String:  true,
+            kSecMatchLimit as String:  kSecMatchLimitOne
+        ]
+        var result: AnyObject?
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
+              let data = result as? Data else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    private func delete(_ key: Key) {
+        let query: [String: Any] = [
+            kSecClass as String:       kSecClassGenericPassword,
+            kSecAttrAccount as String: key.rawValue
+        ]
+        SecItemDelete(query as CFDictionary)
+    }
 }

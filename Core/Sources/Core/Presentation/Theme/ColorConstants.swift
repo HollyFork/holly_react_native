@@ -1,6 +1,7 @@
 
 
 import SwiftUI
+import Foundation
 
 public enum ColorConstants {
     
@@ -44,4 +45,6 @@ public enum ColorConstants {
     static let black50  = Color(argb: 0xFFFFFFFF)
     
 }
+
+
 

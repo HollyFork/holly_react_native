@@ -1,5 +1,5 @@
 import SwiftUI
-
+import Foundation
 
 public extension Color {
     init(argb hex: UInt32) {

@@ -2,6 +2,15 @@
 import SwiftUI
 
 
+
+import SwiftUI
+
+struct Payment: Identifiable {
+    let id = UUID()
+    let method: String
+    let amount: Double
+}
+
 struct CustomPaymentBottomSheet: View {
     @State private var showPaymentInput = false
     @State private var selectedPaymentMethod: String = ""

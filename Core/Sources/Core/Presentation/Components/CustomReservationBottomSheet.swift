@@ -1,6 +1,7 @@
 // Presentation/Views/CustomReservationBottomSheet.swift
 import SwiftUI
 
+/*
 struct CustomReservationBottomSheet: View {
 
     let reservation: Reservation
@@ -437,3 +438,6 @@ struct CustomReservationBottomSheet: View {
         return f.string(from: date)
     }
 }
+
+
+*/

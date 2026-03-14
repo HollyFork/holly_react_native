@@ -1,17 +1,23 @@
-import Foundation
+//
+//  LogoutUseCase.swift
+//  Core
+//
+//  Created by Hadj Rabah on 14/03/2026.
+//
 
-public protocol LogoutUseCase {
-    func execute(completion: @escaping (Result<String, Error>) -> Void)
-}
 
-public class LogoutUseCaseImpl: LogoutUseCase {
-    private let repository: LogoutRepository
-    
-    public init(repository: LogoutRepository) {
-        self.repository = repository
+public final class LogoutUseCase {
+
+    private let keychainManager: KeychainManager
+
+    public init(keychainManager: KeychainManager = .shared) {
+        self.keychainManager = keychainManager
     }
-    
-    public func execute(completion: @escaping (Result<String, Error>) -> Void) {
-        repository.logout(completion: completion)
+
+    /// Synchrone — efface les tokens JWT (garde le deviceToken)
+    public func execute(completion: @escaping (Result<Void, Never>) -> Void) {
+        keychainManager.clearAuthTokens()
+        SessionManager.shared.clear()
+        completion(.success(()))
     }
 }
