@@ -2,6 +2,8 @@
 import SwiftUI
 import UIKit
 import Foundation
+import CoreTelephony
+
 
 public enum DeviceType {
     case iPhone
@@ -21,5 +23,18 @@ public class DeviceHelper {
     public static var isIPhone: Bool {
         UIDevice.current.userInterfaceIdiom == .phone
     }
+    
+    
+    public static var hasSIMCard: Bool {
+            let info = CTTelephonyNetworkInfo()
+
+            if let carriers = info.serviceSubscriberCellularProviders {
+                return carriers.values.contains {
+                    // mobileNetworkCode nil = SIM absente ou non enregistrée
+                    $0.mobileNetworkCode != nil
+                }
+            }
+            return false
+        }
     
 }

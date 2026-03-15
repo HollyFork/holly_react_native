@@ -27,10 +27,8 @@ struct HollyFork_App: App {
     
     // MARK: - Private (dehors du body)
     private func handleAppBackground() {
-        // Logout auto si background prolongé
         DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
             if KeychainManager.shared.getToken() != nil {
-                // Logout silencieux
                 KeychainManager.shared.clearAll()
                 print("🔒 Auto-logout en background")
             }

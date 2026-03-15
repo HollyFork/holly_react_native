@@ -1,9 +1,11 @@
-
 import SwiftUI
 
-
-
-import SwiftUI
+// ✅ Struct Identifiable pour le sheet
+struct ReceiptSheetData: Identifiable {
+    let id = UUID()
+    let data: Data?
+    let tableNumber: String
+}
 
 struct Payment: Identifiable {
     let id = UUID()
@@ -12,98 +14,111 @@ struct Payment: Identifiable {
 }
 
 struct CustomPaymentBottomSheet: View {
-    @State private var showPaymentInput = false
-    @State private var selectedPaymentMethod: String = ""
-    @State private var totalRemaining: Double = 180.50
-    @State private var payments: [Payment] = []
-    
-    
-    @State private var showReceiptSheet = false
-    @State private var receiptPDFData: Data?
-
     
     let tableNumber: String
-    @Environment(\.dismiss) var dismiss
+    let orderItems: [OrderItem]
     
+    @State private var showPaymentInput = false
+    @State private var selectedPaymentMethod = ""
+    @State private var payments: [Payment] = []
+    @State private var receiptSheetData: ReceiptSheetData? = nil  // ✅ CORRIGÉ
+    
+    @Environment(\.dismiss) var dismiss
+
+    // ── Calculs ─────────────────
+    var grandTotal: Double {
+        orderItems.reduce(0) { $0 + $1.totalPrice }
+    }
+
     var totalPaid: Double {
         payments.reduce(0) { $0 + $1.amount }
     }
-    
+
+    var totalRemaining: Double {
+        max(0, grandTotal - totalPaid)
+    }
+
+    var receiptItems: [ReceiptItem] {
+        orderItems.map { item in
+            let cleanedPrice = item.article.price
+                .replacingOccurrences(of: ",", with: ".")
+                .trimmingCharacters(in: CharacterSet(charactersIn: "."))
+
+            return ReceiptItem(
+                name: item.article.name,
+                quantity: item.quantity,
+                price: Double(cleanedPrice) ?? 0,
+                category: item.article.categoryName,
+                menu: nil
+            )
+        }
+    }
+
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
+                // Header
                 HStack {
                     Text("Table \(tableNumber)")
                         .font(.system(size: 28, weight: .bold))
                     Spacer()
-                    Button(action: {
-                        dismiss()
-                    }) {
+                    Button { dismiss() } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 28))
                             .foregroundColor(.gray)
                     }
                 }
                 .padding()
-                
+
                 ScrollView {
                     VStack(spacing: 16) {
+                        // Résumé commande (inchangé)
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Résumé de la commande")
                                 .font(.system(size: 22, weight: .semibold))
-
                             Divider()
-
-                            let items = [
-                                ReceiptItem(name: "Salade César", quantity: 2, price: 12.0, category: "Entrée", menu: nil),
-                                ReceiptItem(name: "Soupe à l'oignon", quantity: 1, price: 8.5, category: "Entrée", menu: nil),
-                                
-                                ReceiptItem(name: "Steak frites", quantity: 2, price: 18.0, category: "Plat", menu: nil),
-                                ReceiptItem(name: "Saumon grillé", quantity: 1, price: 22.5, category: "Plat", menu: nil),
-                                ReceiptItem(name: "Poulet rôti", quantity: 1, price: 16.0, category: "Plat", menu: nil),
-                                
-                                ReceiptItem(name: "Crème brûlée", quantity: 2, price: 7.5, category: "Dessert", menu: nil),
-                                ReceiptItem(name: "Tarte Tatin", quantity: 1, price: 8.0, category: "Dessert", menu: nil),
-                                
-                                ReceiptItem(name: "Coca-Cola", quantity: 3, price: 3.5, category: "Boisson", menu: nil),
-                                ReceiptItem(name: "Vin rouge (bouteille)", quantity: 1, price: 35.0, category: "Boisson", menu: nil),
-                                ReceiptItem(name: "Eau minérale", quantity: 2, price: 2.5, category: "Boisson", menu: nil)
-                            ]
-
-                            ForEach(items, id: \.name) { item in
-                                HStack {
-                                    Text("\(item.quantity)x")
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .frame(width: 40, alignment: .leading)
-                                    
-                                    Text(item.name)
-                                        .font(.system(size: 16))
-                                    
-                                    Spacer()
-                                    
-                                    let totalPrice = item.price * Double(item.quantity)
-                                    Text(String(format: "%.2f €", totalPrice))
-                                        .font(.system(size: 16, weight: .semibold))
+                            
+                            if orderItems.isEmpty {
+                                Text("Aucun article commandé")
+                                    .foregroundColor(.gray)
+                                    .font(.system(size: 16))
+                                    .padding(.vertical, 8)
+                            } else {
+                                let grouped = Dictionary(grouping: orderItems) {
+                                    $0.article.categoryName
                                 }
-                                .padding(.vertical, 2)
+                                ForEach(grouped.keys.sorted(), id: \.self) { category in
+                                    Text(category)
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(.gray)
+                                        .padding(.top, 4)
+                                    ForEach(grouped[category] ?? []) { item in
+                                        HStack {
+                                            Text("\(item.quantity)x")
+                                                .font(.system(size: 16, weight: .semibold))
+                                                .frame(width: 40, alignment: .leading)
+                                            Text(item.article.name)
+                                                .font(.system(size: 16))
+                                            Spacer()
+                                            Text(String(format: "%.2f €", item.totalPrice))
+                                                .font(.system(size: 16, weight: .semibold))
+                                        }
+                                        .padding(.vertical, 2)
+                                    }
+                                }
                             }
 
-                            
                             Divider()
-                            
-                            // Total
                             HStack {
                                 Text("Total")
                                     .font(.system(size: 20, weight: .bold))
                                     .foregroundColor(ColorConstants.primaryOrange)
                                 Spacer()
-                                Text("180,50 €")
+                                Text(String(format: "%.2f €", grandTotal))
                                     .font(.system(size: 24, weight: .bold))
                                     .foregroundColor(ColorConstants.primaryOrange)
                             }
-                            
                             Divider()
-                            
                             HStack {
                                 Text("Total restant")
                                     .font(.system(size: 20, weight: .bold))
@@ -112,15 +127,13 @@ struct CustomPaymentBottomSheet: View {
                                     .font(.system(size: 24, weight: .bold))
                                     .foregroundColor(totalRemaining > 0 ? .orange : .green)
                             }
-                            
+
                             if !payments.isEmpty {
                                 Divider()
-                                
                                 VStack(alignment: .leading, spacing: 6) {
                                     Text("Paiements effectués :")
                                         .font(.system(size: 16, weight: .semibold))
                                         .padding(.bottom, 4)
-                                    
                                     ForEach(payments) { payment in
                                         HStack {
                                             Text(payment.method)
@@ -132,10 +145,7 @@ struct CustomPaymentBottomSheet: View {
                                                 .foregroundColor(.gray)
                                         }
                                     }
-                                    
-                                    Divider()
-                                        .padding(.vertical, 4)
-                                    
+                                    Divider().padding(.vertical, 4)
                                     HStack {
                                         Text("Total payé")
                                             .font(.system(size: 16, weight: .semibold))
@@ -150,61 +160,36 @@ struct CustomPaymentBottomSheet: View {
                         .padding()
                         .background(Color.gray.opacity(0.1))
                         .cornerRadius(12)
-                        
+
+                        // Méthodes de paiement
                         VStack(spacing: 12) {
-                            
                             HStack {
-                        
                                 Text("Méthode de paiement")
                                     .font(.system(size: 22, weight: .semibold))
                                     .frame(maxWidth: .infinity, alignment: .leading)
-                                
                                 Spacer()
+                                
+                                // ✅ CORRIGÉ : Utilise ReceiptSheetData
                                 Button {
-                                    let items = [
-                                        ReceiptItem(name: "Salade César", quantity: 2, price: 12.0, category: "Entrée", menu: nil),
-                                        ReceiptItem(name: "Soupe à l'oignon", quantity: 1, price: 8.5, category: "Entrée", menu: nil),
-                                        
-                                        ReceiptItem(name: "Steak frites", quantity: 2, price: 18.0, category: "Plat", menu: nil),
-                                        ReceiptItem(name: "Saumon grillé", quantity: 1, price: 22.5, category: "Plat", menu: nil),
-                                        ReceiptItem(name: "Poulet rôti", quantity: 1, price: 16.0, category: "Plat", menu: nil),
-                                        
-                                        ReceiptItem(name: "Crème brûlée", quantity: 2, price: 7.5, category: "Dessert", menu: nil),
-                                        ReceiptItem(name: "Tarte Tatin", quantity: 1, price: 8.0, category: "Dessert", menu: nil),
-                                        
-                                        ReceiptItem(name: "Coca-Cola", quantity: 3, price: 3.5, category: "Boisson", menu: nil),
-                                        ReceiptItem(name: "Vin rouge (bouteille)", quantity: 1, price: 35.0, category: "Boisson", menu: nil),
-                                        ReceiptItem(name: "Eau minérale", quantity: 2, price: 2.5, category: "Boisson", menu: nil)
-                                    ]
-
-                                    let total = items.reduce(0) { $0 + ($1.price * Double($1.quantity)) }
-
                                     let generator = ReceiptPDFGenerator()
-                                    let pdfData = generator.generateReceiptPDF(items: items, total: total, mode: .category)
-
-                                    
-                                    let sizeInBytes = pdfData.count
-                                    let sizeInKB = Double(sizeInBytes) / 1024
-                                    let sizeInMB = sizeInKB / 1024
-
-                                    print(String(format: "Taille du PDF : %.2f Ko (%.2f Mo)", sizeInKB, sizeInMB))
-
-                                    receiptPDFData = pdfData
-                                    showReceiptSheet = true
+                                    let pdfData = generator.generateReceiptPDF(
+                                        items: receiptItems,
+                                        total: grandTotal,
+                                        mode: .category
+                                    )
+                                    receiptSheetData = ReceiptSheetData(data: pdfData, tableNumber: tableNumber)
                                 } label: {
                                     HStack {
                                         Image("ic_receipt")
                                             .resizable()
                                             .aspectRatio(contentMode: .fit)
                                             .frame(width: 24, height: 24)
-
                                         Text("Ticket")
                                             .font(.system(size: 18, weight: .medium))
                                             .foregroundColor(ColorConstants.backgroundWhite)
                                     }
                                     .padding()
                                     .background(ColorConstants.primaryOrange)
-                                    .foregroundColor(.black)
                                     .cornerRadius(12)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
@@ -212,41 +197,29 @@ struct CustomPaymentBottomSheet: View {
                                     )
                                 }
                             }
-                            
-                            
-                            CustomPaymentButton(
-                                icon: "ic_payment_credit_card",
-                                title: "Carte bancaire"
-                            ) {
+
+                            CustomPaymentButton(icon: "ic_payment_credit_card", title: "Carte bancaire") {
                                 selectedPaymentMethod = "Carte bancaire"
                                 showPaymentInput = true
                             }
-                            
-                            CustomPaymentButton(
-                                icon: "ic_payment_cash",
-                                title: "Espèces"
-                            ) {
+                            CustomPaymentButton(icon: "ic_payment_cash", title: "Espèces") {
                                 selectedPaymentMethod = "Espèces"
                                 showPaymentInput = true
                             }
-                            
-                            CustomPaymentButton(
-                                icon: "ic_payment_ticket",
-                                title: "Ticket Restaurant"
-                            ) {
+                            CustomPaymentButton(icon: "ic_payment_ticket", title: "Ticket Restaurant") {
                                 selectedPaymentMethod = "Ticket Restaurant"
                                 showPaymentInput = true
                             }
-                            
-                            CustomPaymentButton(
-                                icon: "ic_payment_gift",
-                                title: "Avoir"
-                            ) {
+                            CustomPaymentButton(icon: "ic_payment_gift", title: "Avoir") {
                                 selectedPaymentMethod = "Avoir"
                                 showPaymentInput = true
                             }
+                            CustomPaymentButton(icon: "ic_payment_cheque", title: "Chèque de banque") {
+                                selectedPaymentMethod = "Chèque"
+                                showPaymentInput = true
+                            }
                         }
-                        
+
                         Spacer(minLength: 40)
                     }
                     .padding()
@@ -259,46 +232,32 @@ struct CustomPaymentBottomSheet: View {
                 tableNumber: tableNumber,
                 totalRemaining: totalRemaining,
                 onAmountEntered: { amount in
-                    let newPayment = Payment(
-                        method: selectedPaymentMethod,
-                        amount: amount
-                    )
-                    payments.append(newPayment)
-                    
-                    totalRemaining -= amount
-                    
-                    
+                    payments.append(Payment(method: selectedPaymentMethod, amount: amount))
                 }
             )
-        }.sheet(isPresented: $showReceiptSheet) {
-            if let data = receiptPDFData {
-                NavigationView {
+        }
+        // ✅ Sheet avec Identifiable struct
+        .sheet(item: $receiptSheetData) { receipt in
+            NavigationView {
+                if let data = receipt.data {
                     PDFDataView(data: data)
-                        .navigationTitle("Ticket de caisse")
+                        .navigationTitle("Ticket Table \(receipt.tableNumber)")
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
-                                Button("Fermer") {
-                                    showReceiptSheet = false
-                                }
+                                Button("Fermer") { receiptSheetData = nil }
                             }
-
                             ToolbarItem(placement: .confirmationAction) {
-                                Button("Envoyer") {
-                                    showReceiptSheet = false
-                                }
+                                Button("Envoyer") { receiptSheetData = nil }
                             }
                         }
-
+                } else {
+                    Text("Erreur génération PDF")
+                        .padding()
                 }
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-            } else {
-                Text("Aucun ticket disponible")
-                    .presentationDetents([.medium])
             }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
         }
-
     }
-
 }

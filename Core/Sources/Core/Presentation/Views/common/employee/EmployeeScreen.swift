@@ -45,23 +45,4 @@ public struct EmployeeScreen: View {
             .background(ColorConstants.backgroundWhite)
         }
     }
-
-    /*
-    public var body: some View {
-        Group {
-            if DeviceHelper.isIPhone {
-                EmployeeScreenIphone(
-                    onHomeButtonClicked:  onHomeButtonClicked,
-                    onShiftButtonClicked: onShiftButtonClicked,
-                    viewModel:            viewModel
-                )
-            } else if DeviceHelper.isIPad {
-                EmployeeScreenIpad(
-                    onHomeButtonClicked:  onHomeButtonClicked,
-                    onShiftButtonClicked: onShiftButtonClicked,
-                    viewModel:            viewModel
-                )
-            }
-        }
-    }*/
 }

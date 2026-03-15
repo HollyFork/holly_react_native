@@ -4,10 +4,7 @@ import Core
 struct MainView: View {
     @State private var currentScreen: Screen = .hollyForkSplashScreen
     @State private var tableNumber: String = Core.StringConstants.EMPTY_STRING
-    
-
-    
-    
+    @State private var tableOrderItems: [OrderItem] = []
     
     var body: some View {
         ZStack {
@@ -24,7 +21,7 @@ struct MainView: View {
                                 if hasDeviceToken && hasAccessToken {
                                     currentScreen = .employee
                                 } else if hasDeviceToken {
-                                    currentScreen = .employeeLogin
+                                    currentScreen = .quicklogin
                                 } else {
                                     currentScreen = .deviceLogin
                                 }
@@ -37,14 +34,14 @@ struct MainView: View {
                 DeviceLoginScreen(
                     onDeviceConfigured: {
                         withAnimation(.easeInOut) {
-                            currentScreen = .employeeLogin
+                            currentScreen = .quicklogin
                         }
                     },
                     deviceLoginUseCase: deviceLoginUseCase
                 )
                 .transition(.opacity)
                 
-            case .employeeLogin:
+            case .quicklogin:
                 QuickLoginScreen(
                     onLoginEmployeeSuccess: {
                         withAnimation(.easeInOut) {
@@ -68,31 +65,36 @@ struct MainView: View {
                 .transition(.opacity)
                 
             case .home:
-                MapScreen(
-                    onHomeButtonClicked: {
-                        withAnimation(.easeInOut) {
-                            currentScreen = .employeeLogin
-                        }
+                HomeScreen(
+                    onHomeButtonClicked:  {
+                        withAnimation(.easeInOut) { currentScreen = .quicklogin }
                     },
                     onTableButtonClicked: { tableNumber in
                         self.tableNumber = tableNumber
-                        withAnimation(.easeInOut) {
-                            currentScreen = .table
-                        }
-                    }
+                        withAnimation(.easeInOut) { currentScreen = .table }
+                    },
+                    getSallesUseCase:       getSallesUseCase,
+                    getTablesUseCase:       getTablesUseCase,
+                    getCommandesUseCase:    getCommandesUseCase,
+                    getReservationsUseCase: getReservationsUseCase,
+                    getArticlesUseCase:     getArticlesUseCase,
+                    getCategoriesUseCase:   getCategoriesUseCase,
+                    restaurantId:           SessionManager.shared.restaurantId ?? 0
                 )
                 .transition(.opacity)
                 
             case .table:
-                TableScreen(tableNumber: tableNumber)
-                    .onAppear {
-                        // Auto-redirect si pas connecté
-                        if KeychainManager.shared.getToken() == nil {
-                            withAnimation(.easeInOut) {
-                                currentScreen = .employeeLogin
-                            }
+                TableScreen(
+                    tableNumber:    tableNumber,
+                    orderViewModel: TableOrderViewModel()
+                )
+                .onAppear {
+                    if KeychainManager.shared.getToken() == nil {
+                        withAnimation(.easeInOut) {
+                            currentScreen = .quicklogin
                         }
                     }
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -111,7 +113,7 @@ struct MainView: View {
                     print("❌ Logout error: \(error)")
                 }
                 withAnimation(.easeInOut) {
-                    currentScreen = .employeeLogin
+                    currentScreen = .quicklogin
                 }
             }
         }
@@ -121,7 +123,7 @@ struct MainView: View {
 enum Screen {
     case hollyForkSplashScreen
     case deviceLogin
-    case employeeLogin
+    case quicklogin
     case employee
     case home
     case table
@@ -129,8 +131,15 @@ enum Screen {
 
 
 extension MainView {
-    var deviceLoginUseCase: DeviceLoginUseCase { DependencyContainer.shared.deviceLoginUseCase }
-    var quickLoginUseCase:  QuickLoginUseCase  { DependencyContainer.shared.quickLoginUseCase }
-    var logoutUseCase:      LogoutUseCase      { DependencyContainer.shared.logoutUseCase }
-    var getWeekPlanningUseCase:   GetWeekPlanningUseCase     { DependencyContainer.shared.getWeekPlanningUseCase }
+    var deviceLoginUseCase:        DeviceLoginUseCase         { DependencyContainer.shared.deviceLoginUseCase }
+    var quickLoginUseCase:         QuickLoginUseCase          { DependencyContainer.shared.quickLoginUseCase }
+    var logoutUseCase:             LogoutUseCase              { DependencyContainer.shared.logoutUseCase }
+    var getWeekPlanningUseCase:    GetWeekPlanningUseCase     { DependencyContainer.shared.getWeekPlanningUseCase }
+    var getArticlesUseCase:        GetArticlesUseCase         { DependencyContainer.shared.getArticlesUseCase }
+    var getCategoriesUseCase:      GetCategoriesUseCase       { DependencyContainer.shared.getCategoriesUseCase }
+    var getSallesUseCase:          GetSallesUseCase           { DependencyContainer.shared.getSallesUseCase }
+    var getTablesUseCase:          GetTablesUseCase           { DependencyContainer.shared.getTablesUseCase }
+    var getCommandesUseCase:       GetCommandesUseCase        { DependencyContainer.shared.getCommandesUseCase }
+    var getReservationsUseCase:    GetReservationsUseCase     { DependencyContainer.shared.getReservationsUseCase }
+    
 }

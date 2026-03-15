@@ -1,7 +1,10 @@
 import SwiftUI
 import UIKit
 
+
+
 public class AppDelegate: NSObject, UIApplicationDelegate {
+
     static var orientationLock = UIInterfaceOrientationMask.all
 
     public func application(
@@ -12,13 +15,13 @@ public class AppDelegate: NSObject, UIApplicationDelegate {
     }
 
     public func applicationDidFinishLaunching(_ application: UIApplication) {
-        if KeychainManager.shared.getRefreshToken() != nil {
-            print("Démarrage du TokenRefresher")
-            TokenRefresher.shared.startRefreshing()
-        }
+        // Le TokenRefresher est désormais automatique :
+        // il se déclenche uniquement sur réception d'un 401
+        // Aucune initialisation manuelle nécessaire
+        print("✅ App démarrée — TokenRefresher actif (mode réactif)")
     }
 
     public func applicationWillTerminate(_ application: UIApplication) {
-        TokenRefresher.shared.stopRefreshing()
+        // Rien à stopper — pas de timer en arrière-plan
     }
 }

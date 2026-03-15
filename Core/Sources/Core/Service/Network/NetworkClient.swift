@@ -120,29 +120,51 @@ public final class NetworkClient {
     private func execute<Response: Decodable>(
         _ request: URLRequest
     ) -> AnyPublisher<Response, AuthError> {
-        // 1. Log request
         logger.logRequest(request)
         let start = Date()
 
-        return session.dataTaskPublisher(for: request)
+        return performRequest(request, start: start)
+            .catch { [weak self] error -> AnyPublisher<Response, AuthError> in
+                guard let self else {
+                    return Fail(error: error).eraseToAnyPublisher()
+                }
+                // ── Si 401 → refresh puis retry une fois ──────────
+                if case .serverError(let msg) = error, msg.contains("401") {
+                    return TokenRefresher.shared.refreshIfNeeded()
+                        .flatMap { newToken -> AnyPublisher<Response, AuthError> in
+                            // Rebuild request avec le nouveau token
+                            var retryRequest = request
+                            retryRequest.setValue("Bearer \(newToken)", forHTTPHeaderField: "Authorization")
+                            return self.performRequest(retryRequest, start: Date())
+                        }
+                        .eraseToAnyPublisher()
+                }
+                return Fail(error: error).eraseToAnyPublisher()
+            }
+            .eraseToAnyPublisher()
+    }
+
+    // ── Extrait la logique réseau pure (appelée par execute + retry) ──
+    private func performRequest<Response: Decodable>(
+        _ request: URLRequest,
+        start: Date
+    ) -> AnyPublisher<Response, AuthError> {
+        session.dataTaskPublisher(for: request)
             .tryMap { [weak self] data, response -> Response in
                 guard let self else { throw AuthError.unknown }
 
                 let http     = response as? HTTPURLResponse
                 let duration = Date().timeIntervalSince(start)
-
-                // 2. Log response (toujours, succès ou échec)
                 self.logger.logResponse(http, data: data, error: nil, duration: duration)
 
                 guard let http else { throw AuthError.invalidResponse }
 
-                // 3. Erreur HTTP → décode le message métier
                 guard (200...299).contains(http.statusCode) else {
                     let apiError = try? self.decoder.decode(APIErrorResponse.self, from: data)
-                    throw AuthError.serverError(apiError?.message ?? "HTTP \(http.statusCode)")
+                    // ⚠️ On encode le status code dans le message pour le catch
+                    throw AuthError.serverError("401|\(apiError?.message ?? "HTTP \(http.statusCode)")")
                 }
 
-                // 4. Décodage — log détaillé si erreur
                 do {
                     return try self.decoder.decode(Response.self, from: data)
                 } catch let decodeError as DecodingError {
@@ -151,9 +173,59 @@ public final class NetworkClient {
                 }
             }
             .mapError { [weak self] error -> AuthError in
-                // Log les erreurs réseau (timeout, pas de connexion…)
                 if let urlError = error as? URLError {
-                    self?.logger.logResponse(nil, data: nil, error: urlError, duration: Date().timeIntervalSince(start))
+                    self?.logger.logResponse(nil, data: nil, error: urlError, duration: 0)
+                    return AuthError.networkError(urlError.localizedDescription)
+                }
+                return (error as? AuthError) ?? AuthError.unknown
+            }
+            .eraseToAnyPublisher()
+    }
+    
+    public func put<Body: Encodable, Response: Decodable>(
+        endpoint: APIEndpoint,
+        body: Body
+    ) -> AnyPublisher<Response, AuthError> {
+        buildRequest(endpoint: endpoint, method: "PUT", body: body)
+            .flatMap { self.execute($0) }
+            .eraseToAnyPublisher()
+    }
+
+    public func delete(endpoint: APIEndpoint) -> AnyPublisher<Void, AuthError> {
+ 
+        guard let url = endpoint.url else {
+            return Fail(error: AuthError.networkError("URL invalide: \(endpoint.path)"))
+                .eraseToAnyPublisher()
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        if let token = KeychainManager.shared.getToken() {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        logger.logRequest(request)
+        let start = Date()
+
+        return session.dataTaskPublisher(for: request)
+            .tryMap { [weak self] data, response -> Void in
+                let http     = response as? HTTPURLResponse
+                let duration = Date().timeIntervalSince(start)
+                self?.logger.logResponse(http, data: data, error: nil, duration: duration)
+
+                guard let http else { throw AuthError.invalidResponse }
+
+                guard (200...299).contains(http.statusCode) else {
+                    let apiError = try? self?.decoder.decode(APIErrorResponse.self, from: data)
+                    throw AuthError.serverError("401|DELETE \(http.statusCode): \(apiError?.message ?? "")")
+                }
+                return ()
+            }
+            .mapError { [weak self] error -> AuthError in
+                if let urlError = error as? URLError {
+                    self?.logger.logResponse(nil, data: nil, error: urlError, duration: 0)
                     return AuthError.networkError(urlError.localizedDescription)
                 }
                 return (error as? AuthError) ?? AuthError.unknown

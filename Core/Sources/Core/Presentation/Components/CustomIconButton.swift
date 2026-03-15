@@ -25,25 +25,30 @@ struct CustomIconButton: View {
                     .fill(Color.black)
                     .frame(width: 70, height: 70)
 
-                if let imageName = imageName {
-                    Image(imageName)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 40, height: 40)
-                        .foregroundStyle(.white)
-                } else if let systemName = systemName {
-                    Image(systemName: systemName)
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundStyle(.white)
-                } else if let title = title {
-                    Text(title)
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                }
+                content
             }
         }
         .buttonStyle(.plain)
     }
-}
 
+    @ViewBuilder
+    private var content: some View {
+        if let imageName {
+            Image(imageName)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 36, height: 36)
+
+        } else if let systemName {
+            Image(systemName: systemName)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
+
+        } else if let title {
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(.white)
+        }
+    }
+}
