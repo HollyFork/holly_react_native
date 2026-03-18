@@ -1,13 +1,10 @@
-//
-//  TableRepositoryProtocol.swift
-//  Core
-//
-//  Created by Hadj Rabah on 15/03/2026.
-//
-
-
 import Combine
+import Foundation
 
 public protocol TableRepositoryProtocol {
+    // Combine — pour HomeViewModel
     func getTables(salleId: Int?) -> AnyPublisher<[Table], AuthError>
+
+    func findOrCreateTable(tableId: Int) async throws -> TableDetail
+
 }

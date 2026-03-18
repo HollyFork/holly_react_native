@@ -1,33 +1,32 @@
 import SwiftUI
 
+
 public struct HomeScreenIpad: View {
-    var onHomeButtonClicked: () -> Void
+
+    var onHomeButtonClicked:  () -> Void
     var onTableButtonClicked: (String) -> Void
-
     @ObservedObject var viewModel: HomeViewModel
-    @StateObject var reservationViewModel: ReservationViewModel
-    @State private var showPaymentSheet: Bool = false
 
+    // ✅ Tous avec init() interne
+    @StateObject private var reservationViewModel = ReservationViewModel()
+    @StateObject private var tableSearchViewModel = TableSearchViewModel()
+    @StateObject private var orderViewModel       = TableOrderViewModel()
+
+    @State private var showPaymentSheet: Bool   = false
     @State private var tableNumberInput: String = ""
-    @State private var isLoading: Bool = false
-    @State private var showTableScreen: Bool = false
-    @State private var selectedTable: String = ""
-
-    @StateObject private var orderViewModel = TableOrderViewModel()
+    @State private var isLoading:        Bool   = false
+    @State private var showTableScreen:  Bool   = false
+    @State private var selectedTable:    String = ""
+    @State private var currentTableId:   Int    = 0
 
     public init(
-        onHomeButtonClicked: @escaping () -> Void,
+        onHomeButtonClicked:  @escaping () -> Void,
         onTableButtonClicked: @escaping (String) -> Void,
         viewModel: HomeViewModel
     ) {
-        self.onHomeButtonClicked = onHomeButtonClicked
+        self.onHomeButtonClicked  = onHomeButtonClicked
         self.onTableButtonClicked = onTableButtonClicked
-        self.viewModel = viewModel
-        _reservationViewModel = StateObject(wrappedValue: ReservationViewModel(
-            createUseCase: DependencyContainer.shared.createReservationUseCase,
-            updateUseCase: DependencyContainer.shared.updateReservationUseCase,
-            deleteUseCase: DependencyContainer.shared.deleteReservationUseCase
-        ))
+        self.viewModel            = viewModel
     }
 
     public var body: some View {
@@ -35,15 +34,15 @@ public struct HomeScreenIpad: View {
             VStack(spacing: 0) {
                 HStack(spacing: 0) {
 
-                    // ── Colonne gauche 70% ─────────────────────────
+                    // ── Colonne gauche 70% ─────────────────────
                     VStack(spacing: 0) {
 
                         HStack {
                             EmployeeTypeProfile(
-                                employeeName: SessionManager.shared.employeeName ?? "Employé",
-                                typeEmployee: SessionManager.shared.employeeType,
+                                employeeName:          SessionManager.shared.employeeName ?? "Employé",
+                                typeEmployee:          SessionManager.shared.employeeType,
                                 typeEmployeeIsVisible: false,
-                                profileImage: Image(systemName: "person.fill")
+                                profileImage:          Image(systemName: "person.fill")
                             )
                             Spacer()
                         }
@@ -57,6 +56,7 @@ public struct HomeScreenIpad: View {
                                 onBackToMap: {
                                     showTableScreen  = false
                                     tableNumberInput = ""
+                                    currentTableId   = 0
                                     orderViewModel.reset()
                                 },
                                 onPayTapped: { showPaymentSheet = true }
@@ -67,40 +67,75 @@ public struct HomeScreenIpad: View {
                             )
                         } else {
                             Image("test_map_restaurant_ipad")
-                                .resizable()
-                                .scaledToFill()
-                                .frame(
-                                    width:  geometry.size.width * 0.7,
-                                    height: geometry.size.height * 0.8
-                                )
+                                .resizable().scaledToFill()
+                                .frame(width: geometry.size.width * 0.7, height: geometry.size.height * 0.8)
                                 .clipped()
                         }
 
+                        // ── Barre bas ──────────────────────────
                         HStack {
                             CustomIconButton(systemName: "house.fill") {
                                 showTableScreen  = false
                                 tableNumberInput = ""
+                                currentTableId   = 0
                                 orderViewModel.reset()
                                 onHomeButtonClicked()
                             }
+
                             Spacer()
+
                             if showTableScreen {
-                                CustomIconButton(imageName: "ic_payment_check_point") {
+                                // Payer
+                                Button {
                                     showPaymentSheet = true
+                                } label: {
+                                    HStack(spacing: 8) {
+                                        Image("ic_payment_check_point")
+                                            .resizable().scaledToFit().frame(width: 24, height: 24)
+                                        Text("Payer").font(.system(size: 18, weight: .semibold))
+                                    }
+                                    .padding(.horizontal, 16).padding(.vertical, 12)
+                                    .background(ColorConstants.primaryOrange)
+                                    .foregroundColor(.white).cornerRadius(12)
                                 }
-                                CustomIconButton(systemName: "paperplane.fill") { }
+                                .padding(.trailing, 8)
+
+                                // Envoyer commande
+                                // Envoyer commande
+                                Button {
+                                    Task {
+                                        await orderViewModel.sendOrder(
+                                            tableId:      currentTableId,           // ✅ currentTableId pas tableNumber
+                                            restaurantId: SessionManager.shared.restaurantId ?? 0
+                                        )
+                                    }
+                                } label: {
+                                    HStack(spacing: 8) {
+                                        if orderViewModel.orderUiState.isLoading {  // ✅ orderUiState pas uiState
+                                            ProgressView().tint(.white)
+                                        } else {
+                                            Image(systemName: "paperplane.fill")
+                                                .font(.system(size: 16))
+                                        }
+                                        Text(orderViewModel.orderUiState.isLoading ? "Envoi..." : "Envoyer")
+                                            .font(.system(size: 18, weight: .semibold))
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(Color(red: 0.2, green: 0.3, blue: 0.35))
+                                    .foregroundColor(.white)
+                                    .cornerRadius(12)
+                                }
+                                .disabled(orderViewModel.orderUiState.isLoading || orderViewModel.allItems.isEmpty)
+                                .padding(.trailing, 12)
                             }
                         }
-                        .overlay(VStack {
-                            Rectangle().fill(Color.black).frame(height: 1)
-                            Spacer()
-                        })
+                        .overlay(VStack { Rectangle().fill(Color.black).frame(height: 1); Spacer() })
                     }
                     .frame(width: geometry.size.width * 0.7)
 
-                    // ── Colonne droite 30% ──────────────────────────
+                    // ── Colonne droite 30% ──────────────────────
                     VStack(spacing: 6) {
-
                         ReservationsSection(
                             viewModel: viewModel,
                             onAddReservation: {
@@ -116,26 +151,26 @@ public struct HomeScreenIpad: View {
 
                         SearchTableSection(
                             tableNumberInput: $tableNumberInput,
-                            onPrintTapped:   { handlePrint() },
+                            onPrintTapped: { handlePrint() },
                             onSearchTapped: {
-                                if !tableNumberInput.isEmpty {
-                                    selectedTable   = tableNumberInput
-                                    showTableScreen = true
-                                }
+                                guard !tableNumberInput.isEmpty,
+                                      let id = Int(tableNumberInput) else { return }
+                                Task { await tableSearchViewModel.searchTable(id: id) }  // ← id pas numero
                             }
                         )
                         .frame(maxHeight: geometry.size.height * 0.50)
-
+                        
                     }
                     .frame(width: geometry.size.width * 0.3)
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
-            .padding(.top,    geometry.safeAreaInsets.top)
+            .padding(.top, geometry.safeAreaInsets.top)
             .padding(.bottom, geometry.safeAreaInsets.bottom)
             .background(Color.white.ignoresSafeArea())
             .overlay { if isLoading { CustomLoader() } }
         }
+        // ── Sheets ─────────────────────────────────────
         .sheet(isPresented: $reservationViewModel.showSheet) {
             ReservationFormSheet(
                 viewModel: reservationViewModel,
@@ -148,25 +183,36 @@ public struct HomeScreenIpad: View {
                 orderItems:  orderViewModel.allItems
             )
         }
-    }
+        // ── TableSearch result ──────────────────────────
+        .onChange(of: tableSearchViewModel.uiState) { state in
+            switch state {
+            case .found(let detail):
+                currentTableId   = detail.id
+                selectedTable    = String(detail.numero)
+                tableNumberInput = ""
+                showTableScreen  = true
 
-    // MARK: - Helpers
+                // ✅ Restaure commande EN_COURS si elle existe
+                if let commandeId = detail.existingCommandeId {
+                    orderViewModel.commandeId = commandeId
+                    print("♻️ Commande \(commandeId) restaurée — T\(detail.numero)")
+                } else {
+                    orderViewModel.reset()
+                }
+                tableSearchViewModel.reset()
 
-    private func unavailableArticles() -> [String] {
-        guard case .success(let data) = viewModel.uiState else { return [] }
-        return data.articles.filter { !$0.available }.map { $0.name }
-    }
+            case .error(let msg):
+                print("❌ Table: \(msg)")
 
-    private func formattedHour(_ date: Date) -> String {
-        let f = DateFormatter(); f.dateFormat = "HH'h'mm"; return f.string(from: date)
-    }
-
-    private func formattedToday() -> String {
-        let f = DateFormatter(); f.dateFormat = "dd/MM/yyyy"; return f.string(from: Date())
-    }
-
-    private func formattedTime() -> String {
-        let f = DateFormatter(); f.dateFormat = "HH'h'mm"; return f.string(from: Date())
+            default: break
+            }
+        }
+        // ── Order feedback ──────────────────────────────
+        .onChange(of: orderViewModel.orderUiState) { state in
+            if case .success(let id) = state {
+                print("✅ Commande \(id) confirmée")
+            }
+        }
     }
 
     private func handlePrint() {
@@ -204,16 +250,13 @@ struct SearchTableSection: View {
                 CustomNumPad(
                     mode: .basic,
                     onDigitTapped: { digit in
-                        if tableNumberInput.count < 3 { tableNumberInput += digit }
+                        if tableNumberInput.count < 4 { tableNumberInput += digit }
                     },
                     onPrintTapped: onPrintTapped,
                     onSearchTapped: onSearchTapped
                 )
-                // ✅ 1. Frame natif AVANT — SwiftUI rend le numpad à cette taille
                 .frame(width: numPadNativeWidth, height: numPadNativeHeight)
-                // ✅ 2. Scale visuel
                 .scaleEffect(scale, anchor: .center)
-                // ✅ 3. Frame réduit APRÈS — écrase le layout frame au vrai espace occupé
                 .frame(width: numPadNativeWidth * scale, height: numPadNativeHeight * scale)
 
                 Spacer(minLength: 0)

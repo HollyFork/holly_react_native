@@ -5,6 +5,7 @@
 //  Created by Hadj Rabah on 15/03/2026.
 //
 
+import Foundation
 
 struct SalleListDTO: Decodable {
     let count: Int
@@ -12,36 +13,30 @@ struct SalleListDTO: Decodable {
 }
 
 struct SalleDTO: Decodable {
-    let id:          Int
-    let name:        String
-    let capacity:    Int
-    let floor:       Int
-    let description: String?
-    let restaurant:  RestaurantDTO
-}
-
-
-struct RestaurantDTO: Decodable {
-    let restaurantId: Int
+    let id: Int
     let name: String
-    let city: String?
+    let description: String?
+    let capacity: Int
+    let floor: Int?
+    let restaurantId: Int
 
     enum CodingKeys: String, CodingKey {
-        case name, city
+        case id
+        case name
+        case description
+        case capacity
+        case floor
         case restaurantId = "restaurant_id"
     }
-}
 
-
-extension SalleDTO {
     func toDomain() -> Salle {
         Salle(
-            id:           id,
-            name:         name,
-            restaurantId: restaurant.restaurantId,
-            capacity:     capacity,
-            floor:        floor,
-            description:  description
+            id: id,
+            name: name,
+            description: description,
+            capacity: capacity,
+            floor: floor,
+            restaurantId: restaurantId
         )
     }
 }

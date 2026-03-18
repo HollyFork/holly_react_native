@@ -21,7 +21,7 @@ struct MainView: View {
                                 if hasDeviceToken && hasAccessToken {
                                     currentScreen = .employee
                                 } else if hasDeviceToken {
-                                    currentScreen = .quicklogin
+                                    currentScreen = .deviceLogin
                                 } else {
                                     currentScreen = .deviceLogin
                                 }
@@ -66,22 +66,15 @@ struct MainView: View {
                 
             case .home:
                 HomeScreen(
-                    onHomeButtonClicked:  {
-                        withAnimation(.easeInOut) { currentScreen = .quicklogin }
-                    },
-                    onTableButtonClicked: { tableNumber in
-                        self.tableNumber = tableNumber
-                        withAnimation(.easeInOut) { currentScreen = .table }
-                    },
-                    getSallesUseCase:       getSallesUseCase,
-                    getTablesUseCase:       getTablesUseCase,
-                    getCommandesUseCase:    getCommandesUseCase,
-                    getReservationsUseCase: getReservationsUseCase,
-                    getArticlesUseCase:     getArticlesUseCase,
-                    getCategoriesUseCase:   getCategoriesUseCase,
-                    restaurantId:           SessionManager.shared.restaurantId ?? 0
-                )
-                .transition(.opacity)
+                       onHomeButtonClicked:  {
+                           withAnimation(.easeInOut) { currentScreen = .quicklogin }
+                       },
+                       onTableButtonClicked: { tableNumber in
+                           self.tableNumber = tableNumber
+                           withAnimation(.easeInOut) { currentScreen = .table }
+                       }
+                   )
+                   .transition(.opacity)
                 
             case .table:
                 TableScreen(

@@ -232,4 +232,131 @@ public final class NetworkClient {
             }
             .eraseToAnyPublisher()
     }
+    
+    // MARK: - POST async/await
+    public func postAsync<Body: Encodable, Response: Decodable>(
+        endpoint: APIEndpoint,
+        body: Body
+    ) async throws -> Response {
+        guard let url = endpoint.url else {
+            throw AuthError.networkError("URL invalide: \(endpoint.path)")
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        if let token = KeychainManager.shared.getToken() {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        request.httpBody = try JSONEncoder().encode(body)
+        logger.logRequest(request)
+        let start = Date()
+
+        let (data, response) = try await session.data(for: request)
+        let http = response as? HTTPURLResponse
+        logger.logResponse(http, data: data, error: nil, duration: Date().timeIntervalSince(start))
+
+        guard let http else { throw AuthError.invalidResponse }
+
+        guard (200...299).contains(http.statusCode) else {
+            let apiError = try? decoder.decode(APIErrorResponse.self, from: data)
+            throw AuthError.serverError(apiError?.message ?? "HTTP \(http.statusCode)")
+        }
+
+        do {
+            return try decoder.decode(Response.self, from: data)
+        } catch let decodeError as DecodingError {
+            logger.logDecodeError(decodeError, data: data)
+            throw AuthError.decodingError
+        }
+    }
+
+    // MARK: - PATCH async/await
+    public func patchAsync<Body: Encodable, Response: Decodable>(
+        endpoint: APIEndpoint,
+        body: Body
+    ) async throws -> Response {
+        guard let url = endpoint.url else {
+            throw AuthError.networkError("URL invalide: \(endpoint.path)")
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        if let token = KeychainManager.shared.getToken() {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        request.httpBody = try JSONEncoder().encode(body)
+        logger.logRequest(request)
+        let start = Date()
+
+        let (data, response) = try await session.data(for: request)
+        let http = response as? HTTPURLResponse
+        logger.logResponse(http, data: data, error: nil, duration: Date().timeIntervalSince(start))
+
+        guard let http else { throw AuthError.invalidResponse }
+
+        guard (200...299).contains(http.statusCode) else {
+            let apiError = try? decoder.decode(APIErrorResponse.self, from: data)
+            throw AuthError.serverError(apiError?.message ?? "HTTP \(http.statusCode)")
+        }
+
+        do {
+            return try decoder.decode(Response.self, from: data)
+        } catch let decodeError as DecodingError {
+            logger.logDecodeError(decodeError, data: data)
+            throw AuthError.decodingError
+        }
+    }
+
+    // MARK: - GET async/await (avec params)
+    public func getAsync<Response: Decodable>(
+        endpoint: APIEndpoint,
+        queryItems: [URLQueryItem] = []
+    ) async throws -> Response {
+        guard let baseURL = endpoint.url,
+              var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
+            throw AuthError.networkError("URL invalide: \(endpoint.path)")
+        }
+
+        let filtered = queryItems.filter { $0.value != nil && !($0.value?.isEmpty ?? true) }
+        if !filtered.isEmpty { components.queryItems = filtered }
+
+        guard let url = components.url else {
+            throw AuthError.networkError("URL avec params invalide")
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        if let token = KeychainManager.shared.getToken() {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        logger.logRequest(request)
+        let start = Date()
+
+        let (data, response) = try await session.data(for: request)
+        let http = response as? HTTPURLResponse
+        logger.logResponse(http, data: data, error: nil, duration: Date().timeIntervalSince(start))
+
+        guard let http else { throw AuthError.invalidResponse }
+
+        guard (200...299).contains(http.statusCode) else {
+            let apiError = try? decoder.decode(APIErrorResponse.self, from: data)
+            throw AuthError.serverError(apiError?.message ?? "HTTP \(http.statusCode)")
+        }
+
+        do {
+            return try decoder.decode(Response.self, from: data)
+        } catch let decodeError as DecodingError {
+            logger.logDecodeError(decodeError, data: data)
+            throw AuthError.decodingError
+        }
+    }
 }

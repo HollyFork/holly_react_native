@@ -5,7 +5,6 @@
 //  Created by Hadj Rabah on 15/03/2026.
 //
 
-
 import Combine
 import Foundation
 
@@ -33,7 +32,9 @@ final class HomeDataSourceImpl: HomeDataSource {
 
     func getSalles(restaurantId: Int?) -> AnyPublisher<SalleListDTO, AuthError> {
         var items: [URLQueryItem] = []
-        if let id = restaurantId { items.append(URLQueryItem(name: "restaurant_id", value: String(id))) }
+        if let id = restaurantId {
+            items.append(URLQueryItem(name: "restaurant_id", value: String(id)))
+        }
         return networkClient.getWithParams(endpoint: .salles, queryItems: items)
     }
 
@@ -56,7 +57,7 @@ final class HomeDataSourceImpl: HomeDataSource {
         if let d  = date         { items.append(URLQueryItem(name: "date", value: d)) }
         return networkClient.getWithParams(endpoint: .reservations, queryItems: items)
     }
-    
+
     func getReservation(id: Int) -> AnyPublisher<ReservationDTO, AuthError> {
         networkClient.get(endpoint: .reservationDetail(id: id))
     }

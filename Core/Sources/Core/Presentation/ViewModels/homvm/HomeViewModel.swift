@@ -1,11 +1,3 @@
-//
-//  HomeViewModel.swift
-//  Core
-//
-//  Created by Hadj Rabah on 15/03/2026.
-//
-
-
 import Foundation
 import Combine
 
@@ -20,56 +12,57 @@ public final class HomeViewModel: ObservableObject {
     private let getReservationsUseCase: GetReservationsUseCase
     private let getArticlesUseCase:     GetArticlesUseCase
     private let getCategoriesUseCase:   GetCategoriesUseCase
-
     private var cancellables = Set<AnyCancellable>()
     private let restaurantId: Int
 
-    public init(
-        getSallesUseCase:       GetSallesUseCase,
-        getTablesUseCase:       GetTablesUseCase,
-        getCommandesUseCase:    GetCommandesUseCase,
-        getReservationsUseCase: GetReservationsUseCase,
-        getArticlesUseCase:     GetArticlesUseCase,
-        getCategoriesUseCase:   GetCategoriesUseCase,
-        restaurantId: Int
-    ) {
-        self.getSallesUseCase       = getSallesUseCase
-        self.getTablesUseCase       = getTablesUseCase
-        self.getCommandesUseCase    = getCommandesUseCase
-        self.getReservationsUseCase = getReservationsUseCase
-        self.getArticlesUseCase     = getArticlesUseCase
-        self.getCategoriesUseCase   = getCategoriesUseCase
-        self.restaurantId           = restaurantId
+    public init() {
+        let networkClient = DependencyContainer.shared.networkClient
+        let homeDS        = HomeDataSourceImpl(networkClient: networkClient)
+        let tableDS       = TableActionDataSourceImpl(networkClient: networkClient) // ← NOUVEAU
+
+        self.restaurantId = SessionManager.shared.restaurantId ?? 0
+
+        self.getSallesUseCase = GetSallesUseCase(
+            repository: SalleRepositoryImpl(dataSource: homeDS)
+        )
+        self.getTablesUseCase = GetTablesUseCase(
+            repository: TableRepositoryImpl(          // ← les deux datasources
+                homeDataSource:  homeDS,
+                tableDataSource: tableDS
+            )
+        )
+        self.getCommandesUseCase = GetCommandesUseCase(
+            repository: CommandeRepositoryImpl(dataSource: homeDS)
+        )
+        self.getReservationsUseCase = GetReservationsUseCase(
+            repository: ReservationRepositoryImpl(dataSource: homeDS)
+        )
+        self.getArticlesUseCase = GetArticlesUseCase(
+            repository: ArticleRepositoryImpl(dataSource: homeDS)
+        )
+        self.getCategoriesUseCase = GetCategoriesUseCase(
+            repository: CategoryRepositoryImpl(dataSource: homeDS)
+        )
     }
 
-    // MARK: - Load (stratégie parallèle + séquentielle)
+    // MARK: - Load
     public func loadAll() async {
         uiState = .loading
 
-        // ── Groupe 1 : parallèle immédiat ─────────────────────
-        let articlesP    = getArticlesUseCase.execute(disponible: true)
-        let categoriesP  = getCategoriesUseCase.execute(restaurantId: restaurantId)
-        let sallesP      = getSallesUseCase.execute(restaurantId: restaurantId)
+        let articlesP   = getArticlesUseCase.execute(disponible: true)
+        let categoriesP = getCategoriesUseCase.execute(restaurantId: restaurantId)
+        let sallesP     = getSallesUseCase.execute(restaurantId: restaurantId)
 
-        // ── Salles → Tables (séquentiel) + Commandes + Résa (parallèle après tables) ──
         sallesP
             .flatMap { [weak self] salles -> AnyPublisher<([Salle], [Table], [Commande], [Reservation]), AuthError> in
-                guard let self else {
-                    return Fail(error: AuthError.unknown).eraseToAnyPublisher()
-                }
-                // Tables depuis toutes les salles (tous salleId ou nil pour tout)
-                let tablesP      = self.getTablesUseCase.execute(salleId: nil)
-                let commandesP   = self.getCommandesUseCase.execute(restaurantId: self.restaurantId)
+                guard let self else { return Fail(error: .unknown).eraseToAnyPublisher() }
+                let tablesP       = self.getTablesUseCase.execute(salleId: nil)
+                let commandesP    = self.getCommandesUseCase.execute(restaurantId: self.restaurantId)
                 let reservationsP = self.getReservationsUseCase.execute(restaurantId: self.restaurantId)
-
-                // Parallèle : Tables + Commandes + Réservations
                 return Publishers.Zip3(tablesP, commandesP, reservationsP)
-                    .map { tables, commandes, reservations in
-                        (salles, tables, commandes, reservations)
-                    }
+                    .map { (salles, $0, $1, $2) }
                     .eraseToAnyPublisher()
             }
-            // Combine avec Articles + Catégories en parallèle
             .combineLatest(articlesP, categoriesP)
             .receive(on: DispatchQueue.main)
             .sink(
@@ -94,25 +87,25 @@ public final class HomeViewModel: ObservableObject {
     }
 
     public func refresh() async { await loadAll() }
-    
+
+    // MARK: - Articles par catégorie
     public var articlesByCategory: [CategoryWithArticles] {
         guard case .success(let data) = uiState else { return [] }
-
-        let sorted = data.categories.sorted {
-            $0.displayOrder != $1.displayOrder
-                ? $0.displayOrder < $1.displayOrder
-                : $0.name < $1.name
-        }
-
-        return sorted.compactMap { category in
-            let articles = data.articles.filter { $0.categoryId == category.id }
-            guard !articles.isEmpty else { return nil }
-            return CategoryWithArticles(category: category, articles: articles)
-        }
+        return data.categories
+            .sorted {
+                $0.displayOrder != $1.displayOrder
+                    ? $0.displayOrder < $1.displayOrder
+                    : $0.name < $1.name
+            }
+            .compactMap { category in
+                let articles = data.articles.filter { $0.categoryId == category.id }
+                guard !articles.isEmpty else { return nil }
+                return CategoryWithArticles(category: category, articles: articles)
+            }
     }
 
     public struct CategoryWithArticles: Identifiable {
-        public let id:       Int    // = category.id
+        public let id:       Int
         public let category: Category
         public let articles: [Article]
 

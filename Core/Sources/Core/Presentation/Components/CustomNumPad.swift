@@ -26,7 +26,16 @@ struct CustomNumPad: View {
     ]
     
     private var maxDigits: Int {
-        return mode == .login ? 4 : 3
+        switch mode {
+        case .login:
+            return 4
+        case .basic:
+            return 4
+        case .search:
+            return 4
+        case .payment:
+            return 9
+        }
     }
     
     init(

@@ -44,15 +44,7 @@ public struct DeviceLoginScreen: View {
                     
                 default:
                     VStack(spacing: 20) {
-                        Text("Configuration Équipement")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                        
-                        Text("Entrez l'ID restaurant et le code PIN 6 chiffres")
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
-                        
+                       
                         CustomTextField(
                             "ID Restaurant",
                             text: $restaurantID,
@@ -62,7 +54,7 @@ public struct DeviceLoginScreen: View {
                         .keyboardType(.numberPad)
                         
                         CustomSecureField(
-                            "Code PIN Restaurant (6 chiffres)",
+                            "Code PIN",
                             text: $pinRestaurant,
                             hasError: viewModel.hasError
                         )
@@ -77,7 +69,7 @@ public struct DeviceLoginScreen: View {
                         }
                         
                         CustomPrimaryButton(
-                            title: "Configurer",
+                            title: "Connexion",
                             action: {
                                 Task {
                                     await viewModel.configureDevice(

@@ -1,18 +1,8 @@
-//
-//  TableOrderViewModel.swift
-//  Core
-//
-//  Created by Hadj Rabah on 15/03/2026.
-//
-
-
 import Foundation
 import Combine
-import Foundation
 
 public struct OrderItem: Identifiable, Equatable {
-
-    public let id:      UUID    = UUID()
+    public let id:      UUID = UUID()
     public let article: Article
     public var quantity: Int
 
@@ -21,7 +11,6 @@ public struct OrderItem: Identifiable, Equatable {
         self.quantity = quantity
     }
 
-    // ✅ Prix unitaire nettoyé (gère "5.97", "5,97", "5.")
     public var unitPrice: Double {
         let cleaned = article.price
             .replacingOccurrences(of: ",", with: ".")
@@ -29,38 +18,40 @@ public struct OrderItem: Identifiable, Equatable {
         return Double(cleaned) ?? 0
     }
 
-    // ✅ Prix total = unitaire × quantité
-    public var totalPrice: Double {
-        unitPrice * Double(quantity)
-    }
-
-    // ✅ Affichage formaté
-    public var formattedUnitPrice: String {
-        String(format: "%.2f€", unitPrice)
-    }
-
-    public var formattedTotalPrice: String {
-        String(format: "%.2f€", totalPrice)
-    }
+    public var totalPrice: Double { unitPrice * Double(quantity) }
+    public var formattedUnitPrice: String  { String(format: "%.2f€", unitPrice) }
+    public var formattedTotalPrice: String { String(format: "%.2f€", totalPrice) }
 }
 
 @MainActor
 public final class TableOrderViewModel: ObservableObject {
 
-    @Published public var directItems:  [OrderItem] = []
-    @Published public var suivre1Items: [OrderItem] = []
-    @Published public var suivre2Items: [OrderItem] = []
+    @Published public var directItems:   [OrderItem] = []
+    @Published public var suivre1Items:  [OrderItem] = []
+    @Published public var suivre2Items:  [OrderItem] = []
+    @Published public var orderUiState:  OrderUiState = .idle
 
-    public init() {}
-    
-    public var allItems: [OrderItem] {
-        directItems + suivre1Items + suivre2Items
+    public var commandeId: Int? = nil
+
+    // ✅ UseCase interne
+    private let sendOrderUseCase: SendOrderUseCase
+
+    public init() {
+        let ds        = OrderRemoteDataSourceImpl(networkClient: DependencyContainer.shared.networkClient)
+        let repo      = OrderRepositoryImpl(dataSource: ds)
+        let createUC  = CreateOrderUseCase(repository: repo)
+        let addLineUC = AddOrderLineUseCase(repository: repo)
+        self.sendOrderUseCase = SendOrderUseCase(
+            createOrderUseCase:  createUC,
+            addOrderLineUseCase: addLineUC
+        )
     }
 
-    public var grandTotal: Double {
-        allItems.reduce(0) { $0 + $1.totalPrice }
-    }
+    // MARK: - Computed
+    public var allItems: [OrderItem]  { directItems + suivre1Items + suivre2Items }
+    public var grandTotal: Double     { allItems.reduce(0) { $0 + $1.totalPrice } }
 
+    // MARK: - Add
     public func addArticle(_ article: Article, to section: TableScreen.SectionTarget) {
         switch section {
         case .direct:  addTo(list: &directItems,  article: article)
@@ -75,12 +66,43 @@ public final class TableOrderViewModel: ObservableObject {
         } else {
             list.append(OrderItem(article: article, quantity: 1))
         }
-        print("🛒 Total: \(allItems.count) articles — \(String(format: "%.2f", grandTotal))€")
     }
 
+    // MARK: - Send
+    public func sendOrder(tableId: Int, restaurantId: Int) async {
+        guard !allItems.isEmpty else {
+            orderUiState = .error("Aucun article à envoyer")
+            return
+        }
+        orderUiState = .loading
+        let createdById = SessionManager.shared.employeeId ?? 0
+
+        do {
+            let finalId = try await sendOrderUseCase.execute(
+                existingCommandeId: commandeId,
+                tableId:            tableId,
+                restaurantId:       restaurantId,
+                createdById:        createdById,
+                items:              allItems
+            )
+            commandeId   = finalId
+            orderUiState = .success(commandeId: finalId)
+            print("✅ Commande \(finalId) envoyée — \(allItems.count) lignes")
+        } catch let error as AuthError {
+            orderUiState = .error(error.errorDescription ?? "Erreur")
+        } catch {
+            orderUiState = .error(error.localizedDescription)
+        }
+    }
+
+    // MARK: - Reset
     public func reset() {
         directItems  = []
         suivre1Items = []
         suivre2Items = []
+        commandeId   = nil
+        orderUiState = .idle
     }
 }
+
+

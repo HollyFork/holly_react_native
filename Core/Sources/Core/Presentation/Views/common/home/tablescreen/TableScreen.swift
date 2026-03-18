@@ -11,6 +11,10 @@ public struct TableScreen: View {
     var onBackToMap:        () -> Void
     var onPayTapped:        () -> Void
 
+    @StateObject private var viewModel = HomeViewModel()
+
+    
+    
     @ObservedObject var orderViewModel: TableOrderViewModel
     @State private var selectedCategory: HomeViewModel.CategoryWithArticles? = nil
     @State private var activeSection: SectionTarget = .direct

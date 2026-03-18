@@ -1,3 +1,5 @@
+
+
 import Foundation
 import Combine
 
@@ -28,8 +30,20 @@ public final class EmployeeViewModel: ObservableObject {
     public func loadPlanning() async {
         planningUiState = .loading
 
+        let currentDate: String = {
+            let f = DateFormatter()
+            f.dateFormat = "yyyy-MM-dd"
+            return f.string(from: Date())
+        }()
+        
+        let filter = PlanningFilter(
+            employeeId:   employeeId,
+            restaurantId: restaurantId,
+            date : currentDate
+        )
+
         getWeekPlanningUseCase
-            .execute(employeeId: employeeId, restaurantId: restaurantId)
+            .execute(filter: filter)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
