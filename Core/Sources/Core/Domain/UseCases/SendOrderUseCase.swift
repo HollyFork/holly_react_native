@@ -1,10 +1,4 @@
-//
-//  SendOrderUseCase.swift
-//  Core
-//
-//  Created by Hadj Rabah on 15/03/2026.
-//
-
+ 
 
 import Foundation
 
@@ -21,15 +15,13 @@ public final class SendOrderUseCase {
         self.addOrderLineUseCase = addOrderLineUseCase
     }
 
-    /// Crée la commande si besoin, puis envoie toutes les lignes
     public func execute(
         existingCommandeId: Int?,
         tableId:            Int,
         restaurantId:       Int,
         createdById:        Int,
         items:              [OrderItem]
-    ) async throws -> Int {  // retourne le commandeId final
-        // 1️⃣ Créer la commande si elle n'existe pas
+    ) async throws -> Int {
         let commandeId: Int
         if let existing = existingCommandeId {
             commandeId = existing
@@ -43,7 +35,6 @@ public final class SendOrderUseCase {
             print("✅ Commande créée — id: \(commandeId)")
         }
 
-        // 2️⃣ Envoyer chaque ligne
         for item in items {
             _ = try await addOrderLineUseCase.execute(
                 commandeId: commandeId,

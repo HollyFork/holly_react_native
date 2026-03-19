@@ -1,10 +1,3 @@
-//
-//  NetworkLogger.swift
-//  Core
-//
-//  Created by Hadj Rabah on 14/03/2026.
-//
-
 
 import Foundation
 
@@ -13,7 +6,6 @@ final class NetworkLogger {
     static let shared = NetworkLogger()
     private init() {}
 
-    // MARK: - Request
     func logRequest(_ request: URLRequest) {
         let method  = request.httpMethod ?? "?"
         let url     = request.url?.absoluteString ?? "?"
@@ -34,7 +26,6 @@ final class NetworkLogger {
         print("└────────────────────────────────────────────────\n")
     }
 
-    // MARK: - Response
     func logResponse(
         _ response: HTTPURLResponse?,
         data: Data?,
@@ -61,7 +52,6 @@ final class NetworkLogger {
         print("└────────────────────────────────────────────────\n")
     }
 
-    // MARK: - Decode Error
     func logDecodeError(_ error: DecodingError, data: Data?) {
         print("\n┌─── ⚠️  DECODE ERROR ───────────────────────────")
         switch error {
@@ -86,7 +76,6 @@ final class NetworkLogger {
         print("└────────────────────────────────────────────────\n")
     }
 
-    // MARK: - Private
     private func prettyJSON(from data: Data, prefix: String) -> String {
         guard
             let obj  = try? JSONSerialization.jsonObject(with: data),

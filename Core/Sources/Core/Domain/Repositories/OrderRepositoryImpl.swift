@@ -1,10 +1,3 @@
-//
-//  OrderRepositoryImpl.swift
-//  Core
-//
-//  Created by Hadj Rabah on 15/03/2026.
-//
-
 
 import Foundation
 
@@ -42,4 +35,20 @@ final class OrderRepositoryImpl: OrderRepositoryProtocol {
         )
         return try await dataSource.addOrderLine(dto).toDomain()
     }
+    
+    func kitchenPrint(commandeId: Int) async throws {
+
+        let dto = KitchenPrintRequestDTO(
+            createdAt: ISO8601DateFormatter().string(from: Date()),
+            status: "EN_COURS",
+            kitchenStatus: "PENDING",
+            priority: "NORMAL",
+            createdById: SessionManager.shared.employeeId ?? 0,
+            restaurantId: SessionManager.shared.restaurantId ?? 0,
+            tableId: 0
+        )
+
+        try await dataSource.kitchenPrint(dto, commandeId: commandeId)
+    }
+
 }

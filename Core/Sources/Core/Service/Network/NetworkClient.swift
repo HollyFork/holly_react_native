@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 
-// MARK: - API Error DTO (décodage des erreurs métier)
 private struct APIErrorResponse: Decodable {
     let nonFieldErrors: [String]?
     let detail: String?
@@ -16,7 +15,6 @@ private struct APIErrorResponse: Decodable {
     }
 }
 
-// MARK: - NetworkClient
 public final class NetworkClient {
 
     private let session: URLSession
@@ -28,7 +26,6 @@ public final class NetworkClient {
         self.decoder = JSONDecoder()
     }
 
-    // MARK: - POST
     public func post<Body: Encodable, Response: Decodable>(
         endpoint: APIEndpoint,
         body: Body
@@ -38,13 +35,12 @@ public final class NetworkClient {
             .eraseToAnyPublisher()
     }
 
-    // MARK: - GET (Bearer)
     public func get<Response: Decodable>(
         endpoint: APIEndpoint
     ) -> AnyPublisher<Response, AuthError> {
         buildRequest(endpoint: endpoint, method: "GET", body: Optional<String>.none)
             .flatMap { request -> AnyPublisher<URLRequest, AuthError> in
-                // Inject Bearer token
+
                 guard let token = KeychainManager.shared.getToken() else {
                     return Fail(error: AuthError.deviceNotConfigured).eraseToAnyPublisher()
                 }
@@ -55,12 +51,11 @@ public final class NetworkClient {
             .flatMap { self.execute($0) }
             .eraseToAnyPublisher()
     }
-    // MARK: - GET  Param(Bearer)
+
     public func getWithParams<Response: Decodable>(
         endpoint: APIEndpoint,
         queryItems: [URLQueryItem]
     ) -> AnyPublisher<Response, AuthError> {
-        // Construit l'URL avec query params
         guard let baseURL = endpoint.url,
               var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
             return Fail(error: AuthError.networkError("URL invalide: \(endpoint.path)"))
@@ -79,7 +74,6 @@ public final class NetworkClient {
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        // Inject Bearer token
         if let token = KeychainManager.shared.getToken() {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
@@ -87,7 +81,6 @@ public final class NetworkClient {
         return execute(request)
     }
 
-    // MARK: - Build Request
     private func buildRequest<Body: Encodable>(
         endpoint: APIEndpoint,
         method: String,
@@ -116,7 +109,6 @@ public final class NetworkClient {
             .eraseToAnyPublisher()
     }
 
-    // MARK: - Execute (logging centralisé ici)
     private func execute<Response: Decodable>(
         _ request: URLRequest
     ) -> AnyPublisher<Response, AuthError> {
@@ -128,11 +120,9 @@ public final class NetworkClient {
                 guard let self else {
                     return Fail(error: error).eraseToAnyPublisher()
                 }
-                // ── Si 401 → refresh puis retry une fois ──────────
                 if case .serverError(let msg) = error, msg.contains("401") {
                     return TokenRefresher.shared.refreshIfNeeded()
                         .flatMap { newToken -> AnyPublisher<Response, AuthError> in
-                            // Rebuild request avec le nouveau token
                             var retryRequest = request
                             retryRequest.setValue("Bearer \(newToken)", forHTTPHeaderField: "Authorization")
                             return self.performRequest(retryRequest, start: Date())
@@ -144,7 +134,6 @@ public final class NetworkClient {
             .eraseToAnyPublisher()
     }
 
-    // ── Extrait la logique réseau pure (appelée par execute + retry) ──
     private func performRequest<Response: Decodable>(
         _ request: URLRequest,
         start: Date
@@ -161,7 +150,6 @@ public final class NetworkClient {
 
                 guard (200...299).contains(http.statusCode) else {
                     let apiError = try? self.decoder.decode(APIErrorResponse.self, from: data)
-                    // ⚠️ On encode le status code dans le message pour le catch
                     throw AuthError.serverError("401|\(apiError?.message ?? "HTTP \(http.statusCode)")")
                 }
 
@@ -233,7 +221,6 @@ public final class NetworkClient {
             .eraseToAnyPublisher()
     }
     
-    // MARK: - POST async/await
     public func postAsync<Body: Encodable, Response: Decodable>(
         endpoint: APIEndpoint,
         body: Body
@@ -273,7 +260,6 @@ public final class NetworkClient {
         }
     }
 
-    // MARK: - PATCH async/await
     public func patchAsync<Body: Encodable, Response: Decodable>(
         endpoint: APIEndpoint,
         body: Body
@@ -313,7 +299,6 @@ public final class NetworkClient {
         }
     }
 
-    // MARK: - GET async/await (avec params)
     public func getAsync<Response: Decodable>(
         endpoint: APIEndpoint,
         queryItems: [URLQueryItem] = []

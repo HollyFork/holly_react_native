@@ -1,12 +1,5 @@
-//
-//  CategoryListDTO.swift
-//  Core
-//
-//  Created by Hadj Rabah on 15/03/2026.
-//
 
 
-// Nouveau fichier — CategoryListDTO distinct de ArticleListDTO
 struct CategoryListDTO: Decodable {
     let count:    Int
     let next:     String?

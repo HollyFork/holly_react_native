@@ -2,7 +2,6 @@ import SwiftUI
 import Foundation
 import Combine
 
-// MARK: - TableScreen
 
 public struct TableScreen: View {
 
@@ -43,7 +42,6 @@ public struct TableScreen: View {
         GeometryReader { geometry in
             VStack(spacing: 0) {
 
-                // ── Header ──────────────────────────────────────
                 HStack {
                     Image(systemName: "clock").foregroundColor(.black)
                     Text("01:14:54").font(.system(size: 16)).foregroundColor(.black)
@@ -60,10 +58,8 @@ public struct TableScreen: View {
 
                 HStack(spacing: 0) {
 
-                    // ── Colonne gauche — commande ────────────────
                     VStack(spacing: 0) {
 
-                        // Tabs
                         HStack(spacing: 0) {
                             ForEach(SectionTarget.allCases, id: \.self) { section in
                                 Button { activeSection = section } label: {
@@ -80,7 +76,6 @@ public struct TableScreen: View {
                             }
                         }
 
-                        // Les 3 sections — chacune a son propre ScrollView
                         GeometryReader { leftGeo in
                             VStack(spacing: 0) {
                                 OrderSectionView(
@@ -110,7 +105,6 @@ public struct TableScreen: View {
 
                     Rectangle().fill(Color.black).frame(width: 1)
 
-                    // ── Colonne centre — articles ────────────────
                     VStack {
                         if let selected = selectedCategory {
                             Text(selected.category.name)
@@ -163,7 +157,6 @@ public struct TableScreen: View {
 
                     Rectangle().fill(Color.black).frame(width: 1)
 
-                    // ── Colonne droite — menu catégories ─────────
                     VStack(spacing: 0) {
                         Text("Menu")
                             .font(.system(size: 22, weight: .bold))
@@ -213,7 +206,6 @@ public struct TableScreen: View {
     }
 }
 
-// MARK: - OrderSectionView
 
 struct OrderSectionView: View {
     let title:    String
@@ -226,7 +218,6 @@ struct OrderSectionView: View {
     var body: some View {
         VStack(spacing: 0) {
 
-            // Titre
             Text(title)
                 .font(.system(size: 14, weight: .semibold))
                 .frame(maxWidth: .infinity)
@@ -236,7 +227,6 @@ struct OrderSectionView: View {
                     : Color.gray.opacity(0.2))
                 .overlay(Rectangle().stroke(Color.black, lineWidth: 1))
 
-            // Liste — ScrollView propre à cette section
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 0) {
                     if items.isEmpty {
@@ -259,7 +249,6 @@ struct OrderSectionView: View {
     }
 }
 
-// MARK: - OrderItemRow
 
 struct OrderItemRow: View {
     @Binding var item: OrderItem
@@ -280,7 +269,6 @@ struct OrderItemRow: View {
     var body: some View {
         ZStack(alignment: .trailing) {
 
-            // Fond rouge (poubelle)
             if offset < 0 {
                 Button { deleteWithAnimation() } label: {
                     Image(systemName: "trash.fill")
@@ -293,10 +281,8 @@ struct OrderItemRow: View {
                 .buttonStyle(PlainButtonStyle())
             }
 
-            // Ligne principale
             HStack(spacing: 0) {
 
-                // Bouton X
                 Button { deleteWithAnimation() } label: {
                     Text("X")
                         .font(.system(size: 11, weight: .bold))
@@ -305,7 +291,6 @@ struct OrderItemRow: View {
                 }
                 .buttonStyle(PlainButtonStyle())
 
-                // Nom article
                 Text(item.article.name)
                     .font(.system(size: 12, weight: .medium))
                     .lineLimit(1)
@@ -313,7 +298,6 @@ struct OrderItemRow: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.leading, 4)
 
-                // − quantité +
                 HStack(spacing: 2) {
                     Button {
                         if item.quantity > 1 { item.quantity -= 1 }
@@ -341,7 +325,6 @@ struct OrderItemRow: View {
                     .buttonStyle(PlainButtonStyle())
                 }
 
-                // Prix
                 Text(item.formattedTotalPrice)
                     .font(.system(size: 12, weight: .semibold))
                     .monospacedDigit()
@@ -353,18 +336,16 @@ struct OrderItemRow: View {
             .background(Color.white)
             .contentShape(Rectangle())
             .offset(x: offset)
-            // ✅ simultaneousGesture = coexiste avec le ScrollView parent
             .simultaneousGesture(
                 DragGesture(minimumDistance: 10, coordinateSpace: .local)
                     .onChanged { value in
-                        // 1. Détecte la direction au tout premier mouvement
+
                         if dragDirection == nil {
                             let h = abs(value.translation.width)
                             let v = abs(value.translation.height)
                             dragDirection = h > v ? .horizontal : .vertical
                         }
 
-                        // 2. Si vertical → le ScrollView gère, on ne fait rien
                         guard dragDirection == .horizontal       else { return }
                         guard value.translation.width < 0        else { return }
 
@@ -375,7 +356,7 @@ struct OrderItemRow: View {
                         offset = clamped
                     }
                     .onEnded { value in
-                        defer { dragDirection = nil } // reset après chaque geste
+                        defer { dragDirection = nil }
 
                         guard dragDirection == .horizontal else { return }
 

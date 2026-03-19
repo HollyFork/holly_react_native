@@ -5,7 +5,6 @@ public struct HomeScreen: View {
     var onHomeButtonClicked:  () -> Void
     var onTableButtonClicked: (String) -> Void
 
-    // ✅ viewModel déclaré ici
     @StateObject private var viewModel = HomeViewModel()
 
     public init(

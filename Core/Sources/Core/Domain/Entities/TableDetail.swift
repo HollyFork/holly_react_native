@@ -1,10 +1,3 @@
-//
-//  TableDetail.swift
-//  Core
-//
-//  Created by Hadj Rabah on 15/03/2026.
-//
-
 
 public struct TableDetail: Equatable {
     public let id:                  Int
@@ -13,8 +6,8 @@ public struct TableDetail: Equatable {
     public let isOccupied:          Bool
     public let salleId:             Int
     public let salleName:           String
-    public let existingCommandeId:  Int?       // ← commande EN_COURS si existe
-    public let existingOrderItems:  [OrderLine] // ← lignes de la commande existante
+    public let existingCommandeId:  Int?
+    public let existingOrderItems:  [OrderLine]  
 
     public init(
         id:                 Int,

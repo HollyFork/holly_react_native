@@ -1,6 +1,5 @@
 import SwiftUI
 
-// ✅ Struct Identifiable pour le sheet
 struct ReceiptSheetData: Identifiable {
     let id = UUID()
     let data: Data?
@@ -21,11 +20,10 @@ struct CustomPaymentBottomSheet: View {
     @State private var showPaymentInput = false
     @State private var selectedPaymentMethod = ""
     @State private var payments: [Payment] = []
-    @State private var receiptSheetData: ReceiptSheetData? = nil  // ✅ CORRIGÉ
+    @State private var receiptSheetData: ReceiptSheetData? = nil
     
     @Environment(\.dismiss) var dismiss
 
-    // ── Calculs ─────────────────
     var grandTotal: Double {
         orderItems.reduce(0) { $0 + $1.totalPrice }
     }
@@ -57,7 +55,6 @@ struct CustomPaymentBottomSheet: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                // Header
                 HStack {
                     Text("Table \(tableNumber)")
                         .font(.system(size: 28, weight: .bold))
@@ -72,7 +69,6 @@ struct CustomPaymentBottomSheet: View {
 
                 ScrollView {
                     VStack(spacing: 16) {
-                        // Résumé commande (inchangé)
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Résumé de la commande")
                                 .font(.system(size: 22, weight: .semibold))
@@ -161,7 +157,6 @@ struct CustomPaymentBottomSheet: View {
                         .background(Color.gray.opacity(0.1))
                         .cornerRadius(12)
 
-                        // Méthodes de paiement
                         VStack(spacing: 12) {
                             HStack {
                                 Text("Méthode de paiement")
@@ -169,7 +164,6 @@ struct CustomPaymentBottomSheet: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                 Spacer()
                                 
-                                // ✅ CORRIGÉ : Utilise ReceiptSheetData
                                 Button {
                                     let generator = ReceiptPDFGenerator()
                                     let pdfData = generator.generateReceiptPDF(
@@ -236,7 +230,6 @@ struct CustomPaymentBottomSheet: View {
                 }
             )
         }
-        // ✅ Sheet avec Identifiable struct
         .sheet(item: $receiptSheetData) { receipt in
             NavigationView {
                 if let data = receipt.data {

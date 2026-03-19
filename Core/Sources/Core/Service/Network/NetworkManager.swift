@@ -4,7 +4,6 @@ final class NetworkManager {
     static let shared = NetworkManager()
     private init() {}
     
-    // MARK: - GET
     
     func getRequest<T: Decodable>(
         from endpoint: APIEndpoint,
@@ -43,7 +42,6 @@ final class NetworkManager {
         }.resume()
     }
     
-    // MARK: - POST
     
     func postRequest<T: Decodable>(
         to endpoint: APIEndpoint,
@@ -90,7 +88,6 @@ final class NetworkManager {
         }.resume()
     }
     
-    // MARK: - PATCH
     
     func patchRequest<T: Decodable>(
         to endpoint: APIEndpoint,
@@ -137,8 +134,6 @@ final class NetworkManager {
         }.resume()
     }
     
-    // MARK: - DELETE (sans generic de réponse → juste succès / erreur)
-    // Si tu as besoin de décoder un body sur DELETE, on fera une variante générique à part.
     
     func deleteRequest(
         to endpoint: APIEndpoint,
@@ -187,7 +182,6 @@ final class NetworkManager {
         }.resume()
     }
     
-    // MARK: - Handler commun
     
     private func handleResponse<T: Decodable>(
         data: Data?,
@@ -233,7 +227,6 @@ final class NetworkManager {
         }
     }
     
-    // MARK: - REFRESH TOKEN (POUR TokenRefresher)
     func refreshToken(completion: @escaping (Result<Void, Error>) -> Void) {
         guard let url = APIEndpoint.refreshToken.url else {
             completion(.failure(NSError(domain: "Invalid refresh URL", code: 0)))
@@ -279,7 +272,6 @@ final class NetworkManager {
             }
             
             do {
-                // API retourne { "access": "new_token" }
                 if let json = try JSONSerialization.jsonObject(with: data) as? [String: String],
                    let newAccessToken = json["access"] {
                     KeychainManager.shared.saveToken(newAccessToken)
@@ -297,7 +289,6 @@ final class NetworkManager {
 
 }
 
-/// Petit wrapper pour encoder `Encodable` dans une fonction générique
 private struct AnyEncodable: Encodable {
     private let encodeFunc: (Encoder) throws -> Void
     

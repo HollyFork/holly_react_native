@@ -1,10 +1,3 @@
-//
-//  CommandeListDTO.swift
-//  Core
-//
-//  Created by Hadj Rabah on 15/03/2026.
-//
-
 
 struct CommandeListDTO: Decodable {
     let count: Int

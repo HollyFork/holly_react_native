@@ -1,12 +1,4 @@
-//
-//  DeviceLoginRequestDTO.swift
-//  Core
-//
-//  Created by Hadj Rabah on 14/03/2026.
-//
 
-
-// MARK: - Request
 struct DeviceLoginRequestDTO: Encodable {
     let restaurantId: Int
     let pinRestaurant: String
@@ -17,7 +9,6 @@ struct DeviceLoginRequestDTO: Encodable {
     }
 }
 
-// MARK: - Response
 struct DeviceLoginResponseDTO: Decodable {
     let message: String
     let deviceToken: String
@@ -34,7 +25,6 @@ struct DeviceLoginResponseDTO: Decodable {
     }
 }
 
-// MARK: - Mapper
 extension DeviceLoginResponseDTO {
     func toDomain() -> DeviceSession {
         DeviceSession(

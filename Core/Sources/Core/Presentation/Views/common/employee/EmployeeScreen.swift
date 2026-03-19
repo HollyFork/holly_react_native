@@ -35,7 +35,7 @@ public struct EmployeeScreen: View {
                 )
             }
         }
-        .safeAreaInset(edge: .bottom) { // Bottom bar universel
+        .safeAreaInset(edge: .bottom) {
             HStack {
                 CustomIconButton(systemName: "house.fill") { onHomeButtonClicked() }
                 Spacer()

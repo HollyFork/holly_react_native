@@ -1,10 +1,3 @@
-//
-//  OrderRepositoryProtocol.swift
-//  Core
-//
-//  Created by Hadj Rabah on 15/03/2026.
-//
-
 
 import Foundation
 
@@ -21,4 +14,6 @@ public protocol OrderRepositoryProtocol {
         quantity:        Int,
         awaitingService: Bool
     ) async throws -> OrderLine
+    
+    func kitchenPrint(commandeId: Int) async throws
 }

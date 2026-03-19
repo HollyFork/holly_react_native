@@ -10,7 +10,6 @@ extension AuthError {
         return false
     }
 
-    // Message propre sans le préfixe technique
     var displayMessage: String? {
         if case .serverError(let msg) = self {
             return msg.hasPrefix("401|")

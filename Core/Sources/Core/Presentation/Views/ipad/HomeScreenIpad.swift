@@ -7,7 +7,6 @@ public struct HomeScreenIpad: View {
     var onTableButtonClicked: (String) -> Void
     @ObservedObject var viewModel: HomeViewModel
 
-    // ✅ Tous avec init() interne
     @StateObject private var reservationViewModel = ReservationViewModel()
     @StateObject private var tableSearchViewModel = TableSearchViewModel()
     @StateObject private var orderViewModel       = TableOrderViewModel()
@@ -34,7 +33,6 @@ public struct HomeScreenIpad: View {
             VStack(spacing: 0) {
                 HStack(spacing: 0) {
 
-                    // ── Colonne gauche 70% ─────────────────────
                     VStack(spacing: 0) {
 
                         HStack {
@@ -72,7 +70,6 @@ public struct HomeScreenIpad: View {
                                 .clipped()
                         }
 
-                        // ── Barre bas ──────────────────────────
                         HStack {
                             CustomIconButton(systemName: "house.fill") {
                                 showTableScreen  = false
@@ -85,56 +82,31 @@ public struct HomeScreenIpad: View {
                             Spacer()
 
                             if showTableScreen {
-                                // Payer
-                                Button {
+                                
+                                CustomIconButton(imageName: "ic_payment_check_point") {
                                     showPaymentSheet = true
-                                } label: {
-                                    HStack(spacing: 8) {
-                                        Image("ic_payment_check_point")
-                                            .resizable().scaledToFit().frame(width: 24, height: 24)
-                                        Text("Payer").font(.system(size: 18, weight: .semibold))
-                                    }
-                                    .padding(.horizontal, 16).padding(.vertical, 12)
-                                    .background(ColorConstants.primaryOrange)
-                                    .foregroundColor(.white).cornerRadius(12)
                                 }
-                                .padding(.trailing, 8)
-
-                                // Envoyer commande
-                                // Envoyer commande
-                                Button {
+                                
+                                CustomIconButton(systemName: "paperplane.fill") {
                                     Task {
+                                        isLoading = true
                                         await orderViewModel.sendOrder(
-                                            tableId:      currentTableId,           // ✅ currentTableId pas tableNumber
-                                            restaurantId: SessionManager.shared.restaurantId ?? 0
+                                            tableId: currentTableId,
+                                            restaurantId: SessionManager.shared.restaurantId ?? 0,
+                                            kitchenPrintUseCase: KitchenPrintUseCase(repository: OrderRepositoryImpl(
+                                                dataSource: OrderRemoteDataSourceImpl(networkClient: DependencyContainer.shared.networkClient)
+                                            ))
                                         )
+                                        isLoading = false
                                     }
-                                } label: {
-                                    HStack(spacing: 8) {
-                                        if orderViewModel.orderUiState.isLoading {  // ✅ orderUiState pas uiState
-                                            ProgressView().tint(.white)
-                                        } else {
-                                            Image(systemName: "paperplane.fill")
-                                                .font(.system(size: 16))
-                                        }
-                                        Text(orderViewModel.orderUiState.isLoading ? "Envoi..." : "Envoyer")
-                                            .font(.system(size: 18, weight: .semibold))
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
-                                    .background(Color(red: 0.2, green: 0.3, blue: 0.35))
-                                    .foregroundColor(.white)
-                                    .cornerRadius(12)
-                                }
-                                .disabled(orderViewModel.orderUiState.isLoading || orderViewModel.allItems.isEmpty)
-                                .padding(.trailing, 12)
+                                }.disabled(orderViewModel.allItems.isEmpty)
+ 
                             }
                         }
                         .overlay(VStack { Rectangle().fill(Color.black).frame(height: 1); Spacer() })
                     }
                     .frame(width: geometry.size.width * 0.7)
 
-                    // ── Colonne droite 30% ──────────────────────
                     VStack(spacing: 6) {
                         ReservationsSection(
                             viewModel: viewModel,
@@ -155,7 +127,8 @@ public struct HomeScreenIpad: View {
                             onSearchTapped: {
                                 guard !tableNumberInput.isEmpty,
                                       let id = Int(tableNumberInput) else { return }
-                                Task { await tableSearchViewModel.searchTable(id: id) }  // ← id pas numero
+                                Task { Task { await tableSearchViewModel.searchTable(numero: id) }
+ }
                             }
                         )
                         .frame(maxHeight: geometry.size.height * 0.50)
@@ -170,7 +143,6 @@ public struct HomeScreenIpad: View {
             .background(Color.white.ignoresSafeArea())
             .overlay { if isLoading { CustomLoader() } }
         }
-        // ── Sheets ─────────────────────────────────────
         .sheet(isPresented: $reservationViewModel.showSheet) {
             ReservationFormSheet(
                 viewModel: reservationViewModel,
@@ -183,7 +155,6 @@ public struct HomeScreenIpad: View {
                 orderItems:  orderViewModel.allItems
             )
         }
-        // ── TableSearch result ──────────────────────────
         .onChange(of: tableSearchViewModel.uiState) { state in
             switch state {
             case .found(let detail):
@@ -192,10 +163,27 @@ public struct HomeScreenIpad: View {
                 tableNumberInput = ""
                 showTableScreen  = true
 
-                // ✅ Restaure commande EN_COURS si elle existe
                 if let commandeId = detail.existingCommandeId {
                     orderViewModel.commandeId = commandeId
-                    print("♻️ Commande \(commandeId) restaurée — T\(detail.numero)")
+
+                    orderViewModel.directItems = detail.existingOrderItems.map { line in
+                        OrderItem(
+                            article: Article(
+                                id:           line.articleId,
+                                name:         line.articleName,
+                                price:        line.unitPrice,
+                                description:  nil,
+                                available:    true,
+                                categoryId:   0,
+                                categoryName: ""
+                            ),
+                            quantity: line.quantity
+                        )
+                    }
+                    orderViewModel.suivre1Items = []
+                    orderViewModel.suivre2Items = []
+
+                    print("♻️ Commande \(commandeId) restaurée — T\(detail.numero) — \(detail.existingOrderItems.count) lignes")
                 } else {
                     orderViewModel.reset()
                 }
@@ -207,7 +195,6 @@ public struct HomeScreenIpad: View {
             default: break
             }
         }
-        // ── Order feedback ──────────────────────────────
         .onChange(of: orderViewModel.orderUiState) { state in
             if case .success(let id) = state {
                 print("✅ Commande \(id) confirmée")
@@ -222,7 +209,6 @@ public struct HomeScreenIpad: View {
 }
 
 
-// MARK: - SearchTableSection
 
 struct SearchTableSection: View {
     @Binding var tableNumberInput: String
@@ -266,7 +252,6 @@ struct SearchTableSection: View {
     }
 }
 
-// MARK: - ServicesInfoSection
 
 struct ServicesInfoSection: View {
     var items: [String]
@@ -293,7 +278,6 @@ struct ServicesInfoSection: View {
 }
 
 
-// MARK: - ReservationsSection
 
 struct ReservationsSection: View {
     @ObservedObject var viewModel: HomeViewModel

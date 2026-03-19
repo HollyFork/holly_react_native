@@ -14,7 +14,6 @@ public final class QuickLoginViewModel: ObservableObject {
         self.quickLoginUseCase = quickLoginUseCase
     }
 
-    // MARK: - Actions
     public func login() async {
         guard pinCode.count == 4 else {
             uiState = .error("Le code PIN doit contenir 4 chiffres.")

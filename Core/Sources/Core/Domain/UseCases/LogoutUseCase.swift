@@ -1,10 +1,4 @@
-//
-//  LogoutUseCase.swift
-//  Core
-//
-//  Created by Hadj Rabah on 14/03/2026.
-//
-
+ 
 
 public final class LogoutUseCase {
 
@@ -14,7 +8,6 @@ public final class LogoutUseCase {
         self.keychainManager = keychainManager
     }
 
-    /// Synchrone — efface les tokens JWT (garde le deviceToken)
     public func execute(completion: @escaping (Result<Void, Never>) -> Void) {
         keychainManager.clearAuthTokens()
         SessionManager.shared.clear()

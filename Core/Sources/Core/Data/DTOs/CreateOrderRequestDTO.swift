@@ -1,6 +1,5 @@
 import Foundation
 
-// MARK: - Create Order Request
 struct CreateOrderRequestDTO: Encodable {
     let createdById:   Int
     let restaurantId:  Int
@@ -19,7 +18,6 @@ struct CreateOrderRequestDTO: Encodable {
     }
 }
 
-// MARK: - Order Response
 struct OrderResponseDTO: Decodable {
     let id:         Int
     let tableId:    Int?
@@ -44,7 +42,6 @@ struct OrderResponseDTO: Decodable {
     }
 }
 
-// MARK: - Add Line Request
 struct AddOrderLineRequestDTO: Encodable {
     let commandeId:      Int
     let quantity:        Int
@@ -59,51 +56,3 @@ struct AddOrderLineRequestDTO: Encodable {
     }
 }
 
-// MARK: - Order Line Response
-struct OrderLineResponseDTO: Decodable {
-    let id:              Int
-    let commande:        String
-    let article:         ArticleInLigneDTO
-    let quantity:        Int
-    let unitPrice:       String
-    let articleId:       Int
-    let costOfGoodsSold: String
-    let awaitingService: Bool
-
-    enum CodingKeys: String, CodingKey {
-        case id, commande, article, quantity
-        case unitPrice       = "unit_price"
-        case articleId       = "article_id"
-        case costOfGoodsSold = "cost_of_goods_sold"
-        case awaitingService = "awaiting_service"
-    }
-
-    func toDomain() -> OrderLine {
-        OrderLine(
-            id:              id,
-            commandeId:      extractCommandeId(from: commande),
-            articleId:       articleId,
-            articleName:     article.name,
-            articlePrice:    article.price,
-            quantity:        quantity,
-            unitPrice:       unitPrice,
-            awaitingService: awaitingService,
-            costOfGoodsSold: costOfGoodsSold
-        )
-    }
-
-    private func extractCommandeId(from url: String) -> Int? {
-        url.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-           .components(separatedBy: "/")
-           .last
-           .flatMap { Int($0) }
-    }
-}
-
-// MARK: - Lignes list (GET /api/lignes-commandes/)
-struct OrderLineListDTO: Decodable {
-    let count:    Int
-    let next:     String?
-    let previous: String?
-    let results:  [OrderLineResponseDTO]
-}

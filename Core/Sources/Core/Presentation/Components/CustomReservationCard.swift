@@ -14,7 +14,7 @@ struct CustomReservationCard: View {
 
                 VStack {
                     Text(hourReservation)
-                        .font(.system(size: 10, weight: .bold))  // légèrement réduit
+                        .font(.system(size: 10, weight: .bold))   
                         .padding(.top, 8)
 
                     Spacer()

@@ -1,9 +1,3 @@
-//
-//  AuthRepositoryImpl.swift
-//  Core
-//
-//  Created by Hadj Rabah on 14/03/2026.
-//
 
 
 import Foundation
@@ -22,7 +16,6 @@ final class AuthRepositoryImpl: AuthRepositoryProtocol {
         self.keychainManager = keychainManager
     }
 
-    // MARK: - Device Login
     func deviceLogin(restaurantId: Int, pinRestaurant: String) -> AnyPublisher<DeviceSession, AuthError> {
         let request = DeviceLoginRequestDTO(
             restaurantId:  restaurantId,
@@ -37,7 +30,6 @@ final class AuthRepositoryImpl: AuthRepositoryProtocol {
             .eraseToAnyPublisher()
     }
 
-    // MARK: - Quick Login
     func quickLogin(pinCode: String) -> AnyPublisher<Session, AuthError> {
         guard let deviceToken = keychainManager.getDeviceToken() else {
             return Fail(error: AuthError.deviceNotConfigured).eraseToAnyPublisher()

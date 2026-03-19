@@ -16,7 +16,6 @@ class ReceiptPDFGenerator {
         case menu
     }
 
-    // ✅ PDF à page unique, hauteur dynamique selon le contenu
     func generateReceiptPDF(items: [ReceiptItem],
                             total: Double,
                             mode: DisplayMode = .category) -> Data {
@@ -29,18 +28,15 @@ class ReceiptPDFGenerator {
         )
 
         let data = renderer.pdfData { context in
-            context.beginPage() // ✅ Une seule page, peu importe le nombre d'articles
+            context.beginPage()
 
             var currentY: CGFloat = 20
 
-            // 1. HEADER
             drawHeader(&currentY, pageWidth: pageWidth)
             currentY += 20
 
-            // 2. ITEMS
             drawItemsForPage(items: items, mode: mode, currentY: &currentY, pageWidth: pageWidth)
 
-            // 3. FOOTER collé juste après les items
             currentY += 20
             drawFooter(&currentY, total: total, pageWidth: pageWidth)
         }
@@ -48,23 +44,16 @@ class ReceiptPDFGenerator {
         return data
     }
 
-    // MARK: - Calcul de hauteur dynamique
 
     private func calculateTotalHeight(items: [ReceiptItem], mode: DisplayMode) -> CGFloat {
         var height: CGFloat = 0
 
-        // Margin top
         height += 20
-        // Logo
         height += 60 + 15
-        // Titre "REÇU DE CAISSE"
         height += 20
-        // Ligne date + ID
         height += 15
-        // Séparateur après header
         height += 20 + 20
 
-        // Titres de catégories / menus
         if mode == .category {
             let categories = Set(items.compactMap { $0.category })
             height += CGFloat(categories.count) * 18
@@ -73,31 +62,23 @@ class ReceiptPDFGenerator {
             height += CGFloat(menus.count) * 18
         }
 
-        // Items
         for item in items {
-            height += 14 + 2   // ligne "2x Burger — 18.00 €"
+            height += 14 + 2
             if item.quantity > 1 {
-                height += 13 + 2 // ligne prix unitaire
+                height += 13 + 2
             }
         }
 
-        // Séparateur avant footer
         height += 20
-        // TOTAL
         height += 22
-        // QR code
         height += 10 + 80 + 20
-        // "Merci et à bientôt"
         height += 20
-        // URL footer
         height += 20
-        // Margin bottom
         height += 20
 
         return height
     }
 
-    // MARK: - Header
 
     private func drawHeader(_ currentY: inout CGFloat, pageWidth: CGFloat) {
         if let logo = UIImage(named: "ic_holly_fork_whithout_bg") {
@@ -128,7 +109,6 @@ class ReceiptPDFGenerator {
         currentY += 25
     }
 
-    // MARK: - Items
 
     private func drawItemsForPage(items: [ReceiptItem],
                                   mode: DisplayMode,
@@ -169,7 +149,6 @@ class ReceiptPDFGenerator {
         }
     }
 
-    // MARK: - Footer
 
     private func drawFooter(_ currentY: inout CGFloat, total: Double, pageWidth: CGFloat) {
         drawCentered(
@@ -200,7 +179,6 @@ class ReceiptPDFGenerator {
         )
     }
 
-    // MARK: - Utilitaires
 
     private func drawItemLine(item: ReceiptItem, currentY: inout CGFloat, pageWidth: CGFloat) {
         let lineTotal = item.price * Double(item.quantity)
@@ -238,7 +216,6 @@ class ReceiptPDFGenerator {
     }
 }
 
-// MARK: - Helpers privés
 
 private func formattedDateWithMilliseconds() -> String {
     let formatter = DateFormatter()

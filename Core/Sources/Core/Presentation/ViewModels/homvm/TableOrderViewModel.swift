@@ -33,7 +33,6 @@ public final class TableOrderViewModel: ObservableObject {
 
     public var commandeId: Int? = nil
 
-    // ✅ UseCase interne
     private let sendOrderUseCase: SendOrderUseCase
 
     public init() {
@@ -47,11 +46,9 @@ public final class TableOrderViewModel: ObservableObject {
         )
     }
 
-    // MARK: - Computed
     public var allItems: [OrderItem]  { directItems + suivre1Items + suivre2Items }
     public var grandTotal: Double     { allItems.reduce(0) { $0 + $1.totalPrice } }
 
-    // MARK: - Add
     public func addArticle(_ article: Article, to section: TableScreen.SectionTarget) {
         switch section {
         case .direct:  addTo(list: &directItems,  article: article)
@@ -68,12 +65,16 @@ public final class TableOrderViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Send
-    public func sendOrder(tableId: Int, restaurantId: Int) async {
+    public func sendOrder(
+        tableId: Int,
+        restaurantId: Int,
+        kitchenPrintUseCase: KitchenPrintUseCase? = nil  
+    ) async {
         guard !allItems.isEmpty else {
             orderUiState = .error("Aucun article à envoyer")
             return
         }
+        
         orderUiState = .loading
         let createdById = SessionManager.shared.employeeId ?? 0
 
@@ -88,6 +89,18 @@ public final class TableOrderViewModel: ObservableObject {
             commandeId   = finalId
             orderUiState = .success(commandeId: finalId)
             print("✅ Commande \(finalId) envoyée — \(allItems.count) lignes")
+
+            if let printUC = kitchenPrintUseCase {
+                Task {
+                    do {
+                        try await printUC.execute(commandeId: finalId)
+                        print("🖨️ Impression cuisine OK pour \(finalId)")
+                    } catch {
+                        print("⚠️ Échec impression cuisine pour \(finalId) — \(error.localizedDescription)")
+                    }
+                }
+            }
+
         } catch let error as AuthError {
             orderUiState = .error(error.errorDescription ?? "Erreur")
         } catch {
@@ -95,7 +108,6 @@ public final class TableOrderViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Reset
     public func reset() {
         directItems  = []
         suivre1Items = []

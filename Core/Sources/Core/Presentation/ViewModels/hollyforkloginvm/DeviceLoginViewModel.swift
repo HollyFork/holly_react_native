@@ -15,7 +15,7 @@ public final class DeviceLoginViewModel: ObservableObject {
 
     public var hasError: Bool { uiState.hasError }
 
-    // MARK: - Actions
+
     public func configureDevice(restaurantId: Int, pinRestaurant: String) async {
         guard !pinRestaurant.isEmpty, restaurantId > 0 else {
             uiState = .error("Veuillez remplir tous les champs.")

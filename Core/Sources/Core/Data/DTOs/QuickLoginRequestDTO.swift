@@ -1,12 +1,4 @@
-//
-//  QuickLoginRequestDTO.swift
-//  Core
-//
-//  Created by Hadj Rabah on 14/03/2026.
-//
 
-
-// MARK: - Request
 struct QuickLoginRequestDTO: Encodable {
     let deviceToken: String
     let pinCode: String
@@ -17,7 +9,6 @@ struct QuickLoginRequestDTO: Encodable {
     }
 }
 
-// MARK: - Response
 struct QuickLoginResponseDTO: Decodable {
     let message: String
     let accessToken: String
@@ -50,7 +41,6 @@ struct QuickLoginResponseDTO: Decodable {
     }
 }
 
-// MARK: - Mapper
 extension QuickLoginResponseDTO {
     func toDomain() -> Session {
         Session(

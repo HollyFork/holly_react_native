@@ -1,6 +1,5 @@
 import Foundation
 
-// MARK: - Response
 struct EmploiDuTempsResponseDTO: Decodable {
     let restaurant: RestaurantInfoDTO
     let semaine: SemaineDTO
@@ -24,8 +23,8 @@ struct SemaineDTO: Decodable {
 }
 
 struct JourDTO: Decodable {
-    let date: String       // "2026-03-16"
-    let jour: String       // "Lundi"
+    let date: String
+    let jour: String
     let creneaux: [CreneauDTO]
     let totalHeures: Double
 
@@ -36,14 +35,12 @@ struct JourDTO: Decodable {
 }
 
 struct CreneauDTO: Decodable {
-    let debut: String   // "09:00"
-    let fin: String     // "15:00"
+    let debut: String
+    let fin: String
 }
 
-// MARK: - Mapper Extension
 extension EmploiDuTempsResponseDTO {
 
-    // dateFormatter local à l'extension
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "dd/MM"
@@ -53,7 +50,6 @@ extension EmploiDuTempsResponseDTO {
 
     func toDomain() -> WeekPlanning {
         let days: [DaySchedule] = jours.map { jour in
-            // "09/03" → Date (année courante)
             let date = Self.dateFormatter.date(from: jour.date) ?? Date()
 
             var morning:   String? = nil

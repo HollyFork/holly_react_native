@@ -1,10 +1,3 @@
-//
-//  OrderRemoteDataSourceImpl.swift
-//  Core
-//
-//  Created by Hadj Rabah on 15/03/2026.
-//
-
 
 import Foundation
 
@@ -23,4 +16,14 @@ final class OrderRemoteDataSourceImpl: OrderRemoteDataSource {
     func addOrderLine(_ dto: AddOrderLineRequestDTO) async throws -> OrderLineResponseDTO {
         try await networkClient.postAsync(endpoint: .addLigneCommande, body: dto)
     }
+    
+    func kitchenPrint(_ dto: KitchenPrintRequestDTO, commandeId: Int) async throws {
+        let _: EmptyResponse = try await networkClient.postAsync(
+            endpoint: .kitchenPrint(id: commandeId),
+            body: dto
+        )
+    }
+   
 }
+
+public struct EmptyResponse: Decodable {}

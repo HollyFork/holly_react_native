@@ -1,10 +1,4 @@
-//
-//  OrderViewModel.swift
-//  Core
-//
-//  Created by Hadj Rabah on 15/03/2026.
-//
-
+ 
 
 import Foundation
 
@@ -20,7 +14,6 @@ public final class OrderViewModel: ObservableObject {
         self.sendOrderUseCase = sendOrderUseCase
     }
 
-    // MARK: - Send
     public func sendOrder(
         tableId:      Int,
         restaurantId: Int,
@@ -62,3 +55,4 @@ public final class OrderViewModel: ObservableObject {
         commandeId = nil
     }
 }
+

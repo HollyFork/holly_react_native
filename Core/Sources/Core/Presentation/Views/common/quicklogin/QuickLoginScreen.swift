@@ -66,7 +66,7 @@ public struct QuickLoginScreen: View {
             Task {
                 await viewModel.login()
             }
-            enteredCode = "" // Reset pour feedback visuel
+            enteredCode = "" 
         }
     }
     

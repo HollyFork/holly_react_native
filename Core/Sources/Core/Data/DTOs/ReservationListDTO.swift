@@ -1,15 +1,10 @@
-//
-//  ReservationListDTO.swift
-//  Core
-//
-//  Created by Hadj Rabah on 15/03/2026.
-//
-
 import Foundation
 
 struct ReservationListDTO: Decodable {
-    let count: Int
-    let results: [ReservationDTO]
+    let count:    Int
+    let next:     String?
+    let previous: String?
+    let results:  [ReservationDTO]
 }
 
 struct ReservationDTO: Decodable {
@@ -19,36 +14,29 @@ struct ReservationDTO: Decodable {
     let datetime:    String
     let phoneNumber: String?
     let salleId:     Int
-    let salle:       SalleDTO
     let tableId:     Int?
-    let table:       TableDTO?
 
     enum CodingKeys: String, CodingKey {
-        case id, datetime, salle, table
+        case id, datetime
         case clientName  = "client_name"
         case partySize   = "party_size"
         case phoneNumber = "phone_number"
         case salleId     = "salle_id"
         case tableId     = "table_id"
     }
-}
 
-extension ReservationDTO {
-    private static let isoFormatter: ISO8601DateFormatter = {
-        let f = ISO8601DateFormatter()
-        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return f
-    }()
-    private static let isoNoFrac: ISO8601DateFormatter = {
-        let f = ISO8601DateFormatter()
-        f.formatOptions = [.withInternetDateTime]
-        return f
+    private static let formatters: [ISO8601DateFormatter] = {
+        let withMs = ISO8601DateFormatter()
+        withMs.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let withoutMs = ISO8601DateFormatter()
+        withoutMs.formatOptions = [.withInternetDateTime]
+        return [withMs, withoutMs]
     }()
 
     func toDomain() -> Reservation? {
-        let date = Self.isoFormatter.date(from: datetime)
-                ?? Self.isoNoFrac.date(from: datetime)
+        let date = Self.formatters.lazy.compactMap { $0.date(from: datetime) }.first
         guard let date else { return nil }
+
         return Reservation(
             id:          id,
             clientName:  clientName,
@@ -56,9 +44,7 @@ extension ReservationDTO {
             datetime:    date,
             phoneNumber: phoneNumber,
             salleId:     salleId,
-            salleName:   salle.name,
-            tableId:     tableId,
-            tableNumero: table?.numero
+            tableId:     tableId
         )
     }
 }

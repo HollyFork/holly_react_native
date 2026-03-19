@@ -17,41 +17,40 @@ final class TableRepositoryImpl: TableRepositoryProtocol {
             .eraseToAnyPublisher()
     }
 
+   
     func findOrCreateTable(tableId: Int) async throws -> TableDetail {
+        let restaurantId = SessionManager.shared.restaurantId ?? 0
 
+        let salleList    = try await tableDataSource.getSalles(restaurantId: restaurantId)
+        
         do {
-            let table = try await tableDataSource.getTableById(tableId: tableId)
-            let numero = SessionManager.shared.restaurantId ?? 0
-
-
+            let table        = try await tableDataSource.getTableById(tableId: tableId)
             let commandeList = try await tableDataSource.getCommandesEnCours(tableId: table.id)
             let commande     = commandeList.results.first
+
+            let salleName = salleList.results
+                .first { $0.id == table.salleId }
+                .map    { $0.name }
+                ?? "Salle \(table.salleId)"
 
             return TableDetail(
                 id:                 table.id,
                 numero:             table.numero,
                 capacity:           table.capacity,
                 isOccupied:         table.isOccupied,
-                salleId:            table.salle.id,
-                salleName:          table.salle.name,
+                salleId:            table.salleId,
+                salleName:          salleName,
                 existingCommandeId: commande?.id,
-                existingOrderItems: commande?.lignes.map { $0.toDomain() } ?? []
+                existingOrderItems: commande?.lines.map { $0.toDomain() } ?? []
             )
 
         } catch {
-            // 2️⃣ 404 → crée la table
-            //print("⚠️ Table id:\(numero) introuvable — création...")
-
-            let restaurantId = SessionManager.shared.restaurantId ?? 0
-
-            let salleList = try await tableDataSource.getSalles(restaurantId: restaurantId)
-
             guard let defaultSalle = salleList.results.first else {
                 throw AuthError.serverError("Aucune salle disponible")
             }
 
             let createDTO = CreateTableRequestDTO(
-                numero:             restaurantId,
+                numero:             tableId,
                 capacity:           4,
                 reservedSeats:      0,
                 isOccupied:         false,
@@ -62,16 +61,19 @@ final class TableRepositoryImpl: TableRepositoryProtocol {
             )
 
             let newTable = try await tableDataSource.createTable(createDTO)
-            print("✅ restaurantId \(restaurantId) créée — id: \(newTable.id)")
 
             return TableDetail(
                 id:        newTable.id,
                 numero:    newTable.numero,
                 capacity:  newTable.capacity,
                 isOccupied: newTable.isOccupied,
-                salleId:   newTable.salle.id,
-                salleName: newTable.salle.name
+                salleId:   newTable.salleId,
+                salleName: defaultSalle.name
             )
         }
     }
+
 }
+
+
+ 

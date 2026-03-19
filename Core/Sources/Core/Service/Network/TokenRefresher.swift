@@ -6,7 +6,6 @@ final class TokenRefresher {
     static let shared = TokenRefresher()
     private init() {}
 
-    // Évite les refreshes simultanés
     private var isRefreshing = false
     private var refreshPublisher: AnyPublisher<String, AuthError>?
 
@@ -61,7 +60,6 @@ final class TokenRefresher {
                     throw AuthError.invalidResponse
                 }
                 guard (200...299).contains(http.statusCode) else {
-                    // Refresh expiré → forcer re-login
                     throw AuthError.serverError("Session expirée. Veuillez vous reconnecter.")
                 }
                 guard

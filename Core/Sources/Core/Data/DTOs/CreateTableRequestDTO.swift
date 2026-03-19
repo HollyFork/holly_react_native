@@ -1,6 +1,5 @@
 import Foundation
 
-// MARK: - Create Table Request
 struct CreateTableRequestDTO: Encodable {
     let numero:             Int
     let capacity:           Int
@@ -22,55 +21,63 @@ struct CreateTableRequestDTO: Encodable {
     }
 }
 
-// MARK: - Commandes EN_COURS pour une table
 struct CommandeEnCoursListDTO: Decodable {
     let count:   Int
+    let next:    String?
     let results: [CommandeEnCoursDTO]
 }
 
+struct CommandeEnCoursDTO: Decodable {
+    let id:            Int
+    let lines:         [LigneCommandeDTO]
+    let status:        String
+    let tableId:       Int?
+    let kitchenStatus: String
+    let priority:      String
+    let restaurantId:  Int
+    let amount:        String
+    let itemsCount:    Int
+    let isInProgress:  Bool
+    let createdAt:     String
 
+    enum CodingKeys: String, CodingKey {
+        case id, lines, status, amount, priority
+        case tableId       = "table_id"
+        case kitchenStatus = "kitchen_status"
+        case restaurantId  = "restaurant_id"
+        case itemsCount    = "items_count"
+        case isInProgress  = "is_in_progress"
+        case createdAt     = "created_at"
+    }
+}
 
-// MARK: - Ligne de commande (une seule déclaration)
 struct LigneCommandeDTO: Decodable {
-    let id:             Int
-    let article:        ArticleInLigneDTO
-    let quantity:       Int
-    let unitPrice:      String
+    let id:              Int
+    let quantity:        Int
+    let unitPrice:       String
+    let articleId:       Int
+    let articleName:     String
+    let costOfGoodsSold: String
     let awaitingService: Bool
 
     enum CodingKeys: String, CodingKey {
-        case id, article, quantity
+        case id, quantity
         case unitPrice       = "unit_price"
+        case articleId       = "article_id"
+        case articleName     = "article_name"
+        case costOfGoodsSold = "cost_of_goods_sold"
         case awaitingService = "awaiting_service"
     }
 
     func toDomain() -> OrderLine {
         OrderLine(
-            id:             id,
-            articleId:      article.id,
-            articleName:    article.name,
-            articlePrice:   article.price,
-            quantity:       quantity,
-            unitPrice:      unitPrice,
-            awaitingService: awaitingService
+            id:              id,
+            articleId:       articleId,
+            articleName:     articleName,
+            quantity:        quantity,
+            unitPrice:       unitPrice,
+            awaitingService: awaitingService,
+            costOfGoodsSold: costOfGoodsSold
         )
-    }
-}
-
-struct ArticleInLigneDTO: Decodable {
-    let id:    Int
-    let name:  String
-    let price: String
-}
-
-struct CommandeEnCoursDTO: Decodable {
-    let id:      Int
-    let lignes:  [LigneCommandeDTO]
-    let status:  String
-    let tableId: Int?
-
-    enum CodingKeys: String, CodingKey {
-        case id, lignes, status
-        case tableId = "table_id"
     }
 }

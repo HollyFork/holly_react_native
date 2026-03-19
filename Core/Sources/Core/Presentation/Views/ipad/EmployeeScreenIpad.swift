@@ -7,11 +7,9 @@ public struct EmployeeScreenIpad: View {
 
     public var body: some View {
         ZStack(alignment: .topLeading) {
-            // Background horizontal + bottom seulement
             ColorConstants.backgroundWhite
                 .ignoresSafeArea(.container, edges: [.horizontal, .bottom])
             
-            // Profile — haut gauche (respecte safe area)
             EmployeeTypeProfile(
                 employeeName: viewModel.employeeName,
                 typeEmployee: viewModel.employeeType,
@@ -20,7 +18,6 @@ public struct EmployeeScreenIpad: View {
             .padding(.top, 16)
             .padding(.leading, 40)
 
-            // Contenu principal — droite
             HStack {
                 Spacer()
                 VStack(spacing: 24) {
@@ -48,7 +45,6 @@ public struct EmployeeScreenIpad: View {
                 .padding(.trailing, 24)
             }
         }
-        // Safe area verticale contrôlée
         .safeAreaPadding(.top, 8)
         .safeAreaPadding(.bottom, 12)
     }

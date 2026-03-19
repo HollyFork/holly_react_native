@@ -3,13 +3,12 @@ import SwiftUI
 struct ReservationFormSheet: View {
 
     @ObservedObject var viewModel: ReservationViewModel
-    var onDone: () -> Void  // reload après save ou delete
+    var onDone: () -> Void
 
     var body: some View {
         NavigationView {
             Form {
 
-                // MARK: - Client
                 Section("Client") {
                     TextField("Nom du client", text: $viewModel.clientName)
 
@@ -42,7 +41,6 @@ struct ReservationFormSheet: View {
                     )
                 }
 
-                // MARK: - Date
                 Section("Date & Heure") {
                     DatePicker(
                         "Réservation",
@@ -53,7 +51,6 @@ struct ReservationFormSheet: View {
                     .environment(\.locale, Locale(identifier: "fr_FR"))
                 }
 
-                // MARK: - Salle
                 Section("Salle") {
                     Picker("Salle", selection: $viewModel.salleId) {
                         ForEach(viewModel.salles) { salle in
@@ -62,7 +59,6 @@ struct ReservationFormSheet: View {
                     }
                 }
 
-                // MARK: - Erreur
                 if case .error(let msg) = viewModel.formUiState {
                     Section {
                         Text(msg)
@@ -71,7 +67,6 @@ struct ReservationFormSheet: View {
                     }
                 }
 
-                // MARK: - Supprimer (edit uniquement)
                 if viewModel.isEditMode {
                     Section {
                         Button(role: .destructive) {

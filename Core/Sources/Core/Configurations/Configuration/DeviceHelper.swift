@@ -30,7 +30,6 @@ public class DeviceHelper {
 
             if let carriers = info.serviceSubscriberCellularProviders {
                 return carriers.values.contains {
-                    // mobileNetworkCode nil = SIM absente ou non enregistrée
                     $0.mobileNetworkCode != nil
                 }
             }

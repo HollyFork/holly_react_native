@@ -1,5 +1,3 @@
-
-
 import SwiftUI
 import Foundation
 
@@ -26,25 +24,28 @@ public enum ColorConstants {
     public static let green100 = Color(argb: 0xFFABE5C6)
     public static let green50  = Color(argb: 0xFFEEF9F3)
     
-    public  static let yellow250 = Color(argb: 0xFF784A07)
-    public  static let yellow200 = Color(argb: 0xFFD28617)
-    public  static let yellow150 = Color(argb: 0xFFFBBF68)
-    public  static let yellow100 = Color(argb: 0xFFFFE1B7)
-    public  static let yellow50  = Color(argb: 0xFFFFF9F1)
+    public static let yellow250 = Color(argb: 0xFF784A07)
+    public static let yellow200 = Color(argb: 0xFFD28617)
+    public static let yellow150 = Color(argb: 0xFFFBBF68)
+    public static let yellow100 = Color(argb: 0xFFFFE1B7)
+    public static let yellow50  = Color(argb: 0xFFFFF9F1)
     
-    static let orange250 = Color(argb: 0xFF8D3009)
-    static let orange200 = Color(argb: 0xFFC54710)
-    static let orange150 = Color(argb: 0xFFFF7E47)
-    static let orange100 = Color(argb: 0xFFFFC3A9)
-    static let orange50  = Color(argb: 0xFFFFEFE8)
+    public static let orange250 = Color(argb: 0xFF8D3009)
+    public static let orange200 = Color(argb: 0xFFC54710)
+    public static let orange150 = Color(argb: 0xFFFF7E47)
+    public static let orange100 = Color(argb: 0xFFFFC3A9)
+    public static let orange50  = Color(argb: 0xFFFFEFE8)
     
-    static let black250 = Color(argb: 0xFF1B1B1B)
-    static let black200 = Color(argb: 0xFF616776)
-    static let black150 = Color(argb: 0xFFA2AEC4)
-    static let black100 = Color(argb: 0xFFDFE4F0)
-    static let black50  = Color(argb: 0xFFFFFFFF)
-    
+    public static let black250 = Color(argb: 0xFF1B1B1B)
+    public static let black200 = Color(argb: 0xFF616776)
+    public static let black150 = Color(argb: 0xFFA2AEC4)
+    public static let black100 = Color(argb: 0xFFDFE4F0)
+    public static let black50  = Color(argb: 0xFFFFFFFF)
+
+    public static let tableFree             = Color(argb: 0xFFFFFFFF)
+    public static let tableOccupiedMain     = Color(argb: 0xFF8C52FF)
+    public static let tableOccupiedStarter  = Color(argb: 0xFFFF5757)
+    public static let tableOccupiedDish     = Color(argb: 0xFFFFBD59)
+    public static let tableOccupiedDessert  = Color(argb: 0xFF7ED957)
+    public static let tableOccupiedCompleted = Color(argb: 0xFF0CC0DF)  
 }
-
-
-

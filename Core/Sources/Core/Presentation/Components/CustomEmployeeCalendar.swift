@@ -1,6 +1,5 @@
 import SwiftUI
 
-// MARK: - Main Calendar View
 struct CustomEmployeeCalendar: View {
     @ObservedObject var viewModel: EmployeeViewModel
 
@@ -53,7 +52,6 @@ struct CustomEmployeeCalendar: View {
     }
 }
 
-// MARK: - Day Card View
 struct DayCard: View {
     let day: DaySchedule
     let isLast: Bool
@@ -63,7 +61,6 @@ struct DayCard: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            // Header — date
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(cardColor)
@@ -73,13 +70,11 @@ struct DayCard: View {
                     .foregroundColor(.white)
             }
 
-            // Slots
             if let slot = day.morningSlot    { TimeSlotCard(timeSlot: slot, label: "Matin") }
             if let slot = day.afternoonSlot  { TimeSlotCard(timeSlot: slot, label: "A-midi") }
             if let slot = day.eveningSlot    { TimeSlotCard(timeSlot: slot, label: "Soir") }
             if let slot = day.nightSlot      { TimeSlotCard(timeSlot: slot, label: "Nuit") }
 
-            // Repos si aucun créneau
             if [day.morningSlot, day.afternoonSlot, day.eveningSlot, day.nightSlot].allSatisfy({ $0 == nil }) {
                 VStack(spacing: 4) {
                     Text("Repos")
@@ -93,21 +88,18 @@ struct DayCard: View {
                 )
             }
 
-            // DIVIDER entre créneaux/repos et heures totales
             Divider()
                 .frame(height: 1)
                 .background(cardColor.opacity(0.3))
                 .padding(.horizontal, 4)
 
-            // Heures du jour
             Text(formatHours(day.totalHours))
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundColor(day.totalHours > 0 ? cardColor : .gray.opacity(0.4))
                 .frame(maxWidth: .infinity, alignment: .center)
         }
-        .padding(.bottom, 4) // Petit padding en bas
+        .padding(.bottom, 4)
         .overlay(alignment: .bottomTrailing) {
-            // Total semaine — sur la dernière carte
             Text("Semaine : \(formatHours(totalWeekHours))")
                 .font(.system(size: 9, weight: .medium))
                 .foregroundColor(.gray)
@@ -126,7 +118,6 @@ struct DayCard: View {
 }
 
 
-// MARK: - Time Slot Card
 struct TimeSlotCard: View {
     let timeSlot: String
     var label: String = ""

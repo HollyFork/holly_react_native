@@ -1,10 +1,3 @@
-//
-//  OrderLine.swift
-//  Core
-//
-//  Created by Hadj Rabah on 15/03/2026.
-//
-
 
 import Foundation
 
@@ -41,7 +34,6 @@ public struct OrderLine: Equatable {
         self.costOfGoodsSold = costOfGoodsSold
     }
 
-    // Prix total affiché
     public var totalPrice: Double {
         let cleaned = unitPrice
             .replacingOccurrences(of: ",", with: ".")

@@ -18,7 +18,7 @@ public final class HomeViewModel: ObservableObject {
     public init() {
         let networkClient = DependencyContainer.shared.networkClient
         let homeDS        = HomeDataSourceImpl(networkClient: networkClient)
-        let tableDS       = TableActionDataSourceImpl(networkClient: networkClient) // ← NOUVEAU
+        let tableDS       = TableActionDataSourceImpl(networkClient: networkClient)
 
         self.restaurantId = SessionManager.shared.restaurantId ?? 0
 
@@ -26,7 +26,7 @@ public final class HomeViewModel: ObservableObject {
             repository: SalleRepositoryImpl(dataSource: homeDS)
         )
         self.getTablesUseCase = GetTablesUseCase(
-            repository: TableRepositoryImpl(          // ← les deux datasources
+            repository: TableRepositoryImpl(
                 homeDataSource:  homeDS,
                 tableDataSource: tableDS
             )
@@ -45,7 +45,6 @@ public final class HomeViewModel: ObservableObject {
         )
     }
 
-    // MARK: - Load
     public func loadAll() async {
         uiState = .loading
 
@@ -88,7 +87,6 @@ public final class HomeViewModel: ObservableObject {
 
     public func refresh() async { await loadAll() }
 
-    // MARK: - Articles par catégorie
     public var articlesByCategory: [CategoryWithArticles] {
         guard case .success(let data) = uiState else { return [] }
         return data.categories

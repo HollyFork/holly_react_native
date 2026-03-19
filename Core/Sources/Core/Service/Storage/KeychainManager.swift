@@ -6,29 +6,24 @@ public final class KeychainManager {
     public static let shared = KeychainManager()
     private init() {}
 
-    // MARK: - Keys
     private enum Key: String {
         case deviceToken  = "com.hollyfork.device_token"
         case accessToken  = "com.hollyfork.access_token"
         case refreshToken = "com.hollyfork.refresh_token"
     }
 
-    // MARK: - Device Token
     public func saveDeviceToken(_ token: String) { save(token, for: .deviceToken) }
     public func getDeviceToken() -> String?        { get(.deviceToken) }
     public func deleteDeviceToken()                { delete(.deviceToken) }
 
-    // MARK: - Access Token
     public func saveToken(_ token: String)  { save(token, for: .accessToken) }
     public func getToken() -> String?        { get(.accessToken) }
     public func deleteToken()                { delete(.accessToken) }
 
-    // MARK: - Refresh Token
     public func saveRefreshToken(_ token: String) { save(token, for: .refreshToken) }
     public func getRefreshToken() -> String?       { get(.refreshToken) }
     public func deleteRefreshToken()               { delete(.refreshToken) }
 
-    // MARK: - Helpers
     public func clearAuthTokens() {
         deleteToken()
         deleteRefreshToken()
@@ -39,7 +34,6 @@ public final class KeychainManager {
         deleteDeviceToken()
     }
 
-    // MARK: - Private Keychain CRUD
     private func save(_ value: String, for key: Key) {
         guard let data = value.data(using: .utf8) else { return }
         let query: [String: Any] = [
