@@ -34,8 +34,10 @@ public final class TableOrderViewModel: ObservableObject {
     public var commandeId: Int? = nil
 
     private let sendOrderUseCase: SendOrderUseCase
+    private let kitchenPrintUseCase: KitchenPrintUseCase?
 
-    public init() {
+    
+    public init(kitchenPrintUseCase: KitchenPrintUseCase? = nil) {
         let ds        = OrderRemoteDataSourceImpl(networkClient: DependencyContainer.shared.networkClient)
         let repo      = OrderRepositoryImpl(dataSource: ds)
         let createUC  = CreateOrderUseCase(repository: repo)
@@ -44,6 +46,7 @@ public final class TableOrderViewModel: ObservableObject {
             createOrderUseCase:  createUC,
             addOrderLineUseCase: addLineUC
         )
+        self.kitchenPrintUseCase = kitchenPrintUseCase
     }
 
     public var allItems: [OrderItem]  { directItems + suivre1Items + suivre2Items }
@@ -108,6 +111,20 @@ public final class TableOrderViewModel: ObservableObject {
         }
     }
 
+    public func printOrder(commandeId: Int) async {
+        guard let printUC = kitchenPrintUseCase else {
+            print("⚠️ printOrder: pas de KitchenPrintUseCase configuré")
+            return
+        }
+
+        do {
+            try await printUC.execute(commandeId: commandeId)
+            print("🖨️ Impression cuisine OK pour commande \(commandeId)")
+        } catch {
+            print("⚠️ Échec impression cuisine pour commande \(commandeId) — \(error.localizedDescription)")
+        }
+    }
+    
     public func reset() {
         directItems  = []
         suivre1Items = []

@@ -67,17 +67,43 @@ struct ReservationFormSheet: View {
                     }
                 }
 
-                if viewModel.isEditMode {
-                    Section {
-                        Button(role: .destructive) {
-                            Task { await viewModel.delete() }
-                        } label: {
-                            HStack {
-                                Spacer()
-                                Text("Supprimer la réservation")
-                                Spacer()
+
+                Section {
+                    if viewModel.isEditMode {
+
+                        CustomSecondaryButton(
+                            title: "Annuler la réservation",
+                            action: {
+                                Task { await viewModel.delete() }
                             }
-                        }
+                        )
+                        .frame(maxWidth: .infinity)
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets())
+
+                        CustomPrimaryButton(
+                            title: "Modifier l'affectation de table",
+                            action: {
+
+                            },
+                            isActive: viewModel.isFormValid
+                        )
+                        .frame(maxWidth: .infinity)
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets())
+
+                    } else {
+
+                        CustomPrimaryButton(
+                            title: "Affecter la table",
+                            action: {
+
+                            },
+                            isActive: viewModel.isFormValid
+                        )
+                        .frame(maxWidth: .infinity)
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets())
                     }
                 }
             }

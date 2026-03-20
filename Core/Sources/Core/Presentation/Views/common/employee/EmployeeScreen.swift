@@ -26,14 +26,13 @@ public struct EmployeeScreen: View {
     public var body: some View {
         Group {
             if DeviceHelper.isIPhone {
-                EmployeeScreenIphone(
-                    viewModel:  viewModel
-                )
+                EmployeeScreenIphone(viewModel: viewModel)
             } else if DeviceHelper.isIPad {
-                EmployeeScreenIpad(
-                    viewModel:  viewModel
-                )
+                EmployeeScreenIpad(viewModel: viewModel)
             }
+        }
+        .safeAreaInset(edge: .top) {
+            Color.clear.frame(height: 0)
         }
         .safeAreaInset(edge: .bottom) {
             HStack {
@@ -42,6 +41,7 @@ public struct EmployeeScreen: View {
                 CustomShiftButton(title: "Shift") { onShiftButtonClicked() }
             }
             .padding(.horizontal, 24)
+            .padding(.vertical, 12)
             .background(ColorConstants.backgroundWhite)
         }
     }

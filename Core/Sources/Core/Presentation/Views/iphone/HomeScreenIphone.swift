@@ -1,70 +1,243 @@
 import SwiftUI
 
 public struct HomeScreenIphone: View {
-
-    var onHomeButtonClicked:  () -> Void
+    var onHomeButtonClicked: () -> Void
     var onTableButtonClicked: (String) -> Void
     @ObservedObject var viewModel: HomeViewModel
 
+    @StateObject private var reservationViewModel = ReservationViewModel()
+    @StateObject private var tableSearchViewModel = TableSearchViewModel()
+    @StateObject private var orderViewModel: TableOrderViewModel
+
+    @State private var showPaymentSheet: Bool = false
     @State private var tableNumberInput: String = ""
-    @State private var isLoading:        Bool   = false
+    @State private var isLoading: Bool = false
+    @State private var showTableScreen: Bool = false
+    @State private var selectedTable: String = ""
+    @State private var currentTableId: Int = 0
+    @State private var printMessage: String? = nil
+    @State private var isPrintMode: Bool = false
+
+    public init(
+        onHomeButtonClicked: @escaping () -> Void,
+        onTableButtonClicked: @escaping (String) -> Void,
+        viewModel: HomeViewModel
+    ) {
+        self.onHomeButtonClicked = onHomeButtonClicked
+        self.onTableButtonClicked = onTableButtonClicked
+        self.viewModel = viewModel
+
+        _orderViewModel = StateObject(
+            wrappedValue: TableOrderViewModel(
+                kitchenPrintUseCase: KitchenPrintUseCase(
+                    repository: OrderRepositoryImpl(
+                        dataSource: OrderRemoteDataSourceImpl(
+                            networkClient: DependencyContainer.shared.networkClient
+                        )
+                    )
+                )
+            )
+        )
+    }
 
     public var body: some View {
-        GeometryReader { geometry in
-            VStack(spacing: 0) {
-                Image("test_map_restaurant")
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: geometry.size.width, height: geometry.size.height * 0.5)
-                    .clipped()
-
-                VStack(spacing: 0) {
-                    HStack(alignment: .top, spacing: 16) {
-                        ServicesInformations(
-                            showIcon: true,
-                            title:    "Rupture :",
-                            items:    unavailableArticles()
-                        )
-                        .frame(
-                            maxWidth:  geometry.size.width * 0.4,
-                            maxHeight: geometry.size.height * 0.35,
-                            alignment: .topLeading
-                        )
-                        .layoutPriority(1)
-
-                        CustomNumPad(
-                            mode: NumPadMode.basic,
-                            onDigitTapped: { digit in
-                                if tableNumberInput.count < 3 { tableNumberInput += digit }
-                            },
-                            onPrintTapped:  { handlePrint() },
-                            onSearchTapped: { onTableButtonClicked(tableNumberInput) }
-                        )
-                        .scaleEffect(0.6)
-                        .frame(
-                            maxWidth:  geometry.size.width * 0.45,
-                            maxHeight: geometry.size.height * 0.35
-                        )
-                    }
-                    .frame(maxWidth: .infinity)
+        VStack(spacing: 0) {
+            Group {
+                if showTableScreen {
+                    TableScreen(
+                        tableNumber: selectedTable,
+                        articles: viewModel.articlesByCategory,
+                        orderViewModel: orderViewModel,
+                        onBackToMap: {
+                            showTableScreen = false
+                            tableNumberInput = ""
+                            currentTableId = 0
+                            orderViewModel.reset()
+                        },
+                        onPayTapped: { showPaymentSheet = true }
+                    )
                     .padding(.top, 20)
-                    .padding(.horizontal, 16)
+                } else {
+                    FloorPlanDemoView(tableSearchViewModel: tableSearchViewModel)
+                        .padding(.top, 10)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            VStack(spacing: 0) {
+                HStack(alignment: .top, spacing: 0) {
+                    ServicesInformations(
+                        showIcon: true,
+                        title: "Rupture :",
+                        items: unavailableArticles()
+                    )
+                    .scaleEffect(0.75, anchor: .topLeading)
+                    .frame(width: 160, height: 220, alignment: .topLeading)
+                    .clipped()
 
                     Spacer()
 
-                    HStack {
-                        CustomIconButton(systemName: "house.fill") { onHomeButtonClicked() }
-                        Spacer()
+                    GeometryReader { geo in
+                        CustomNumPad(
+                            mode: .basic,
+                            onDigitTapped: { digit in
+                                if tableNumberInput.count < 4 { tableNumberInput += digit }
+                            },
+                            onPrintTapped: handlePrint,
+                            onSearchTapped: {
+                                guard !tableNumberInput.isEmpty,
+                                      let id = Int(tableNumberInput) else { return }
+                                isPrintMode = false
+                                Task { await tableSearchViewModel.searchTable(numero: id) }
+                            }
+                        )
+                        .scaleEffect(0.55, anchor: .topLeading)
+                        .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
+                        .clipped()
                     }
-                    .padding(.horizontal, 30)
-                    .padding(.bottom, 16)
+                    .frame(width: 200, height: 240)
                 }
-                .frame(width: geometry.size.width, height: geometry.size.height * 0.5)
+                .padding(.top, 12)
+                .padding(.horizontal, 16)
+
+                HStack {
+                    CustomIconButton(systemName: "house.fill") {
+                        showTableScreen = false
+                        tableNumberInput = ""
+                        currentTableId = 0
+                        orderViewModel.reset()
+                        onHomeButtonClicked()
+                    }
+                    .scaleEffect(0.7)
+
+                    Spacer()
+
+                    if showTableScreen {
+                        CustomIconButton(imageName: "ic_payment_check_point") {
+                            showPaymentSheet = true
+                        }
+                        .scaleEffect(0.7)
+
+                        CustomIconButton(systemName: "paperplane.fill") {
+                            Task {
+                                isLoading = true
+                                await orderViewModel.sendOrder(
+                                    tableId: currentTableId,
+                                    restaurantId: SessionManager.shared.restaurantId ?? 0
+                                )
+                                isLoading = false
+                            }
+                        }
+                        .scaleEffect(0.7)
+                        .disabled(orderViewModel.allItems.isEmpty)
+                    }
+                }
+                .frame(height: 44)
+                .padding(.horizontal, 30)
+                .padding(.vertical, 6)
             }
-            .frame(width: geometry.size.width, height: geometry.size.height)
+            .frame(maxWidth: .infinity)
             .background(Color.white)
-            .ignoresSafeArea()
-            .overlay { if isLoading { CustomLoader() } }
+        }
+        .padding(.top, 8)
+        .ignoresSafeArea(edges: .bottom)
+        .background(Color.white)
+        .overlay {
+            if isLoading { CustomLoader() }
+            if let message = printMessage {
+                Text(message)
+                    .font(.caption)
+                    .padding()
+                    .background(Color.gray.opacity(0.2))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            printMessage = nil
+                        }
+                    }
+            }
+        }
+        .sheet(isPresented: $reservationViewModel.showSheet) {
+            ReservationFormSheet(
+                viewModel: reservationViewModel,
+                onDone: { Task { await viewModel.loadAll() } }
+            )
+        }
+        .sheet(isPresented: $showPaymentSheet) {
+            CustomPaymentBottomSheet(
+                tableNumber: selectedTable,
+                orderItems: orderViewModel.allItems
+            )
+        }
+        .onChange(of: tableSearchViewModel.uiState) { state in
+            switch state {
+            case .found(let detail):
+                if isPrintMode {
+                    isPrintMode = false
+                    tableSearchViewModel.reset()
+                    tableNumberInput = ""
+
+                    guard let commandeId = detail.existingCommandeId else {
+                        printMessage = "Aucune commande en cours pour T\(detail.numero)"
+                        return
+                    }
+                    Task {
+                        isLoading = true
+                        await orderViewModel.printOrder(commandeId: commandeId)
+                        printMessage = "🖨️ Ticket imprimé — T\(detail.numero)"
+                        isLoading = false
+                    }
+                } else {
+                    currentTableId = detail.id
+                    selectedTable = String(detail.numero)
+                    tableNumberInput = ""
+                    showTableScreen = true
+
+                    if let commandeId = detail.existingCommandeId {
+                        orderViewModel.commandeId = commandeId
+                        orderViewModel.directItems = detail.existingOrderItems.map { line in
+                            OrderItem(
+                                article: Article(
+                                    id: line.articleId,
+                                    name: line.articleName,
+                                    price: line.unitPrice,
+                                    description: nil,
+                                    available: true,
+                                    categoryId: 0,
+                                    categoryName: ""
+                                ),
+                                quantity: line.quantity
+                            )
+                        }
+                        orderViewModel.suivre1Items = []
+                        orderViewModel.suivre2Items = []
+                    } else {
+                        orderViewModel.reset()
+                    }
+                    tableSearchViewModel.reset()
+                }
+
+            case .error(let msg):
+                isPrintMode = false
+                print("❌ Table: \(msg)")
+
+            default:
+                break
+            }
+        }
+        .onChange(of: orderViewModel.orderUiState) { state in
+            if case .success(let commandeId) = state {
+                print("✅ Commande \(commandeId) confirmée")
+
+                Task {
+                    await orderViewModel.printOrder(commandeId: commandeId)
+
+                    showTableScreen = false
+                    tableNumberInput = ""
+                    currentTableId = 0
+                    orderViewModel.reset()
+                }
+            }
         }
     }
 
@@ -74,7 +247,13 @@ public struct HomeScreenIphone: View {
     }
 
     private func handlePrint() {
-        isLoading = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { isLoading = false }
+        guard !tableNumberInput.isEmpty,
+              let tableNumero = Int(tableNumberInput) else {
+            printMessage = "Numéro de table invalide"
+            return
+        }
+
+        isPrintMode = true
+        Task { await tableSearchViewModel.searchTable(numero: tableNumero) }
     }
 }

@@ -76,11 +76,34 @@ public final class TableSearchViewModel: ObservableObject {
         let allTables = try await withThrowingTaskGroup(of: [Table].self) { group in
             for salle in salleList.results {
                 group.addTask { [networkClient = self.networkClient] in
-                    let list: TableListDTO = try await networkClient.getAsync(
-                        endpoint: .tables,
-                        queryItems: [URLQueryItem(name: "salle_id", value: String(salle.id))]
-                    )
-                    return list.results.map { $0.toDomain() }
+                    var salleTables: [Table] = []
+                    var page: Int? = nil
+
+                    repeat {
+                        var items = [URLQueryItem(name: "salle_id", value: String(salle.id))]
+                        if let p = page {
+                            items.append(URLQueryItem(name: "page", value: String(p)))
+                        }
+
+                        let list: TableListDTO = try await networkClient.getAsync(
+                            endpoint: .tables,
+                            queryItems: items
+                        )
+
+                        salleTables += list.results.map { $0.toDomain() }
+
+                        if let nextURL = list.next,
+                           let url = URL(string: nextURL),
+                           let pageVal = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+                               .queryItems?.first(where: { $0.name == "page" })?.value,
+                           let nextPage = Int(pageVal) {
+                            page = nextPage
+                        } else {
+                            page = nil
+                        }
+                    } while page != nil
+
+                    return salleTables
                 }
             }
             var merged: [Table] = []
@@ -147,3 +170,5 @@ public final class TableSearchViewModel: ObservableObject {
 
     public func reset() { uiState = .idle }
 }
+
+

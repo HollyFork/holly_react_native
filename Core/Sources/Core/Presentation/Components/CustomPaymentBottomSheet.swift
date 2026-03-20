@@ -165,6 +165,27 @@ struct CustomPaymentBottomSheet: View {
                                 Spacer()
                                 
                                 Button {
+                                    
+                                } label: {
+                                    HStack {
+                                        Image("ic_receipt")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 24, height: 24)
+                                        Text("Justificatif")
+                                            .font(.system(size: 18, weight: .medium))
+                                            .foregroundColor(ColorConstants.backgroundWhite)
+                                    }
+                                    .padding()
+                                    .background(ColorConstants.primaryOrange)
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    )
+                                }
+                                
+                                Button {
                                     let generator = ReceiptPDFGenerator()
                                     let pdfData = generator.generateReceiptPDF(
                                         items: receiptItems,

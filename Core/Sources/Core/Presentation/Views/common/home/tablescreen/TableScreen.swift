@@ -171,7 +171,8 @@ public struct TableScreen: View {
                                     CustomMenuCategoryButton(
                                         title:    item.category.name,
                                         bgColor:  categoryColor(for: item.category.id),
-                                        txtColor: .white
+                                        txtColor: .white,
+                                        iconName: categoryIcon(for: item.category.id)
                                     ) {
                                         selectedCategory = item
                                     }
@@ -204,6 +205,18 @@ public struct TableScreen: View {
         ]
         return palette[id % palette.count]
     }
+    
+    private func categoryIcon(for id: Int) -> String {
+        let icons: [Int: String] = [
+            0: "ic_menu_entre",
+            1: "ic_menu_plat",
+            2: "ic_menu_vin",
+            3: "ic_menu_desert",
+            4: "ic_menu_cofee"
+        ]
+        return icons[id] ?? "ic_menu_plat"   
+    }
+    
 }
 
 
@@ -396,4 +409,6 @@ struct OrderItemRow: View {
         }
     }
 }
+
+
 
