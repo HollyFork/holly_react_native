@@ -1,6 +1,6 @@
 import XCTest
 
-final class Holly_ForkUITests: XCTestCase {
+final class Holy_ForkUITests: XCTestCase {
 
     override func setUpWithError() throws {continueAfterFailure = false}
 

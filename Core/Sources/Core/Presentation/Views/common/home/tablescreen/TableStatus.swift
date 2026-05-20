@@ -49,7 +49,6 @@ public struct TableItem: Identifiable {
     public let shape: TableShape
     public let rotation: Double
     public let offset: CGSize
-    public let isBorderVisible: Bool
     
     public init(
         number: String,
@@ -57,7 +56,6 @@ public struct TableItem: Identifiable {
         shape: TableShape = .square,
         rotation: Double = 0,
         offset: CGSize = .zero,
-        isBorderVisible: Bool = false
     ) {
         self.id       = number
         self.number   = number
@@ -65,7 +63,6 @@ public struct TableItem: Identifiable {
         self.shape    = shape
         self.rotation = rotation
         self.offset   = offset
-        self.isBorderVisible = isBorderVisible
 
     }
 }
@@ -89,23 +86,9 @@ public struct TableComponentView: View {
                     if table.shape == .circle {
                         Circle()
                             .fill(table.status.backgroundColor)
-                            .overlay(
-                                Circle()
-                                    .strokeBorder(
-                                        table.isBorderVisible ? Color.black : table.status.borderColor,
-                                        lineWidth: table.isBorderVisible ? 2 : 1.5
-                                    )
-                            )
                     } else {
                         RoundedRectangle(cornerRadius: 10)
                             .fill(table.status.backgroundColor)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .strokeBorder(
-                                        table.isBorderVisible ? Color.black : table.status.borderColor,
-                                        lineWidth: table.isBorderVisible ? 2 : 1.5
-                                    )
-                            )
                     }
                 }
                 .frame(width: size, height: size)
@@ -142,37 +125,32 @@ public struct FloorPlanDemoView: View {
     @ObservedObject var tableSearchViewModel: TableSearchViewModel
 
         private let tables: [TableItem] = [
-            TableItem(number: "T900", status: .free, rotation: -12,
-                      offset: CGSize(width: -120, height: -100),
-                      isBorderVisible: true ),
+            TableItem(number: "T230", status: .free, rotation: -12,
+                      offset: CGSize(width: -120, height: -100)),
 
-            TableItem(number: "T901", status: .free, rotation: -12,
-                      offset: CGSize(width: -220, height: -100),
-                      isBorderVisible: true ),
+            TableItem(number: "T231", status: .free, rotation: -12,
+                      offset: CGSize(width: -220, height: -100)),
 
-            TableItem(number: "T902", status: .free, rotation: -12,
-                      offset: CGSize(width: -120, height: -200),
-                      isBorderVisible: true ),
+            TableItem(number: "T32", status: .free, rotation: -12,
+                      offset: CGSize(width: -120, height: -200)),
 
-            TableItem(number: "T903", status: .free, rotation: -12,
+            TableItem(number: "T33", status: .free, rotation: -12,
                       offset: CGSize(width: -120, height: 0)),
 
-            TableItem(number: "T904", status: .occupiedMain, rotation: 8,
+            TableItem(number: "T34", status: .occupiedMain, rotation: 8,
                       offset: CGSize(width: 0, height: -220)),
 
-            TableItem(number: "T905", status: .occupiedStarter, rotation: 15,
-                      offset: CGSize(width: 160, height: -80),
-                      isBorderVisible: true ),
+            TableItem(number: "T35", status: .occupiedStarter, rotation: 15,
+                      offset: CGSize(width: 160, height: -80)),
 
-            TableItem(number: "T906", status: .occupiedDish, rotation: -8,
+            TableItem(number: "T36", status: .occupiedDish, rotation: -8,
                       offset: CGSize(width: 120, height: 80)),
 
-            TableItem(number: "T907", status: .occupiedDessert, shape: .circle,
-                      offset: CGSize(width: -80, height: 140),
-                      isBorderVisible: true ),
+            TableItem(number: "T37", status: .occupiedDessert, shape: .circle,
+                      offset: CGSize(width: -80, height: 140)),
 
-            TableItem(number: "T908", status: .occupiedCompleted, shape: .circle,
-                      offset: CGSize(width: 60, height: 160)),
+            TableItem(number: "T38", status: .occupiedCompleted, shape: .circle,
+                      offset: CGSize(width: 60, height: 160)), 
         ]
     
 

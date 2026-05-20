@@ -43,8 +43,6 @@ public struct TableScreen: View {
             VStack(spacing: 0) {
 
                 HStack {
-                    Image(systemName: "clock").foregroundColor(.black)
-                    Text("01:14:54").font(.system(size: 16)).foregroundColor(.black)
                     Spacer()
                     Text("T \(tableNumber)").font(.system(size: 20, weight: .bold))
                     Spacer()
@@ -296,13 +294,9 @@ struct OrderItemRow: View {
 
             HStack(spacing: 0) {
 
-                Button { deleteWithAnimation() } label: {
-                    Text("X")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(.red)
-                        .frame(width: 18)
-                }
-                .buttonStyle(PlainButtonStyle())
+                Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(.green)
 
                 Text(item.article.name)
                     .font(.system(size: 12, weight: .medium))

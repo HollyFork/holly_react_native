@@ -91,18 +91,10 @@ public final class TableOrderViewModel: ObservableObject {
             )
             commandeId   = finalId
             orderUiState = .success(commandeId: finalId)
+           
             print("✅ Commande \(finalId) envoyée — \(allItems.count) lignes")
 
-            if let printUC = kitchenPrintUseCase {
-                Task {
-                    do {
-                        try await printUC.execute(commandeId: finalId)
-                        print("🖨️ Impression cuisine OK pour \(finalId)")
-                    } catch {
-                        print("⚠️ Échec impression cuisine pour \(finalId) — \(error.localizedDescription)")
-                    }
-                }
-            }
+            
 
         } catch let error as AuthError {
             orderUiState = .error(error.errorDescription ?? "Erreur")
@@ -113,10 +105,9 @@ public final class TableOrderViewModel: ObservableObject {
 
     public func printOrder(commandeId: Int) async {
         guard let printUC = kitchenPrintUseCase else {
-            print("⚠️ printOrder: pas de KitchenPrintUseCase configuré")
+            print("⚠️ KitchenPrintUseCase non configuré")
             return
         }
-
         do {
             try await printUC.execute(commandeId: commandeId)
             print("🖨️ Impression cuisine OK pour commande \(commandeId)")
@@ -124,6 +115,7 @@ public final class TableOrderViewModel: ObservableObject {
             print("⚠️ Échec impression cuisine pour commande \(commandeId) — \(error.localizedDescription)")
         }
     }
+    
     
     public func reset() {
         directItems  = []

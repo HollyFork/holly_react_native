@@ -1,5 +1,5 @@
 import Testing
-@testable import Holly_Fork
+@testable import Holy_Fork
 
 struct Holly_ForkTests {
     @Test func example() async throws {}

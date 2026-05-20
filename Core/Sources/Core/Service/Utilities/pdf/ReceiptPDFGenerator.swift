@@ -81,7 +81,7 @@ class ReceiptPDFGenerator {
 
 
     private func drawHeader(_ currentY: inout CGFloat, pageWidth: CGFloat) {
-        if let logo = UIImage(named: "ic_holly_fork_whithout_bg") {
+        if let logo = UIImage(named: "ic_holy_fork_whithout_bg") {
             let logoSize: CGFloat = 60
             let logoX = (pageWidth - logoSize) / 2
             logo.draw(in: CGRect(x: logoX, y: currentY, width: logoSize, height: logoSize))
@@ -172,7 +172,7 @@ class ReceiptPDFGenerator {
             font: .systemFont(ofSize: 12)
         )
 
-        let footerText = "Holly Fork - https://hollyfork.com/"
+        let footerText = "Holy Fork - https://holyfork.com/"
         footerText.draw(
             at: CGPoint(x: 10, y: currentY + 10),
             withAttributes: [.font: UIFont.systemFont(ofSize: 8)]

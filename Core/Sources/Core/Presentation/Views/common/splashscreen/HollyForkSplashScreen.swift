@@ -7,12 +7,12 @@ public struct HollyForkSplashScreen: View {
     public var body: some View {
         ZStack {
             VStack(spacing: 30) {
-                Image("ic_holly_fork_whithout_bg")
+                Image("ic_holy_fork_whithout_bg")
                     .resizable()
                     .scaledToFit()
                     .frame(width: 150, height: 150)
                 
-                Text("Bienvenue sur Holly Fork")
+                Text("Bienvenue sur Holy Fork")
                     .foregroundColor(.black)
                 
             }

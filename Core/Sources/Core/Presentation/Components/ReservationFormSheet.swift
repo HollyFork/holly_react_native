@@ -50,6 +50,15 @@ struct ReservationFormSheet: View {
                     .datePickerStyle(.compact)
                     .environment(\.locale, Locale(identifier: "fr_FR"))
                 }
+                
+                Section("Préférences client") {
+
+                    TextField("Note du serveur", text: $viewModel.serverNote)
+
+                    TextField("Note du restaurant", text: $viewModel.restaurantNote)
+
+                    TextField("Allergies", text: $viewModel.allergies)
+                }
 
                 Section("Salle") {
                     Picker("Salle", selection: $viewModel.salleId) {

@@ -28,6 +28,9 @@ public final class ReservationViewModel: ObservableObject {
     @Published public var datetime:    Date   = Date()
     @Published public var phoneNumber: String = ""
     @Published public var salleId:     Int    = 0
+    @Published public var serverNote: String = ""
+    @Published public var restaurantNote: String = ""
+    @Published public var allergies: String = ""
     public var salles: [Salle] = []
 
     private let createUseCase: CreateReservationUseCase
@@ -56,6 +59,9 @@ public final class ReservationViewModel: ObservableObject {
         datetime    = reservation.datetime
         phoneNumber = reservation.phoneNumber ?? ""
         salleId     = reservation.salleId
+        serverNote = ""
+        restaurantNote = ""
+        allergies = ""
         formUiState = .idle; sheetMode = .edit(reservation); showSheet = true
     }
 

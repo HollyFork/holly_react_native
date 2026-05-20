@@ -2,28 +2,30 @@ import SwiftUI
 import Core
 
 struct MainView: View {
-    @State private var currentScreen: Screen = .hollyForkSplashScreen
+    @State private var currentScreen: Screen = .holyForkSplashScreen
     @State private var tableNumber: String = Core.StringConstants.EMPTY_STRING
     @State private var tableOrderItems: [OrderItem] = []
     
     var body: some View {
         ZStack {
             switch currentScreen {
-            case .hollyForkSplashScreen:
+            case .holyForkSplashScreen:
                 HollyForkSplashScreen()
                     .onAppear {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                            // Vérifier si device déjà configuré
                             let hasDeviceToken = KeychainManager.shared.getDeviceToken() != nil
                             let hasAccessToken = KeychainManager.shared.getToken() != nil
-                            
+
                             withAnimation(.easeInOut) {
-                                if hasDeviceToken && hasAccessToken {
+                                switch (hasDeviceToken, hasAccessToken) {
+                                case (false, _):
+                                    currentScreen = .deviceLogin
+
+                                case (true, false):
+                                    currentScreen = .quicklogin
+
+                                case (true, true):
                                     currentScreen = .employee
-                                } else if hasDeviceToken {
-                                    currentScreen = .deviceLogin
-                                } else {
-                                    currentScreen = .deviceLogin
                                 }
                             }
                         }
@@ -114,7 +116,7 @@ struct MainView: View {
 }
 
 enum Screen {
-    case hollyForkSplashScreen
+    case holyForkSplashScreen
     case deviceLogin
     case quicklogin
     case employee

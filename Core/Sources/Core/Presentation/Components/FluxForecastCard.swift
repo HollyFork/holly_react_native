@@ -37,7 +37,7 @@ struct FluxForecastCard: View {
             VStack(spacing: 8) {
                 Image(systemName: "cloud.sun.fill")
                     .font(.system(size: 40))
-                    .foregroundStyle(.yellow, .gray)
+                    .foregroundStyle(.gray, .yellow)
                 
                 HStack {
                     Text("\(data.minTemp)°")

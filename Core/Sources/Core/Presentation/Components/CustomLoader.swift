@@ -10,7 +10,7 @@ struct CustomLoader: View {
                 .ignoresSafeArea()
                 .allowsHitTesting(true)
 
-            Image("ic_holly_fork_whithout_bg")
+            Image("ic_holy_fork_whithout_bg")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 100, height: 100)

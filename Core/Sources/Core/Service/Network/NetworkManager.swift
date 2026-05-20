@@ -210,6 +210,27 @@ final class NetworkManager {
         
         print("📥 Status: \(httpResponse.statusCode)")
         
+        if httpResponse.statusCode == 401 {
+            print("🔐 Token expiré → tentative de refresh")
+
+            self.refreshToken { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success:
+                        print("🔁 Retry request après refresh")
+
+                        completion(.failure(NSError(domain: "Retry needed", code: 401)))
+
+                    case .failure:
+                        print("❌ Refresh échoué → logout")
+                        KeychainManager.shared.clearAuthTokens()
+                        completion(.failure(NSError(domain: "Session expired", code: 401)))
+                    }
+                }
+            }
+            return
+        }
+
         guard (200...299).contains(httpResponse.statusCode) else {
             if let errorBody = String(data: data, encoding: .utf8) {
                 print("❌ HTTP \(httpResponse.statusCode): \(errorBody)")

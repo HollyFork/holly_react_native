@@ -19,6 +19,11 @@ public struct HomeScreenIpad: View {
     @State private var printMessage:     String? = nil
 
     @State private var isPrintMode: Bool = false
+    
+    @State private var showPrinterSheet: Bool = false
+    @State private var selectedPrinter: String = "Cuisine"
+    @State private var pendingPrintTableId: Int? = nil
+    @State private var pendingCommandeId: Int? = nil
 
     public init(
         onHomeButtonClicked:  @escaping () -> Void,
@@ -141,7 +146,19 @@ public struct HomeScreenIpad: View {
 
                         SearchTableSection(
                             tableNumberInput: $tableNumberInput,
-                            onPrintTapped: { handlePrint() },
+                            onPrintTapped: {
+
+                                let numeroStr = showTableScreen ? selectedTable : tableNumberInput
+
+                                guard !numeroStr.isEmpty, let _ = Int(numeroStr) else {
+                                    printMessage = "Entrez un numéro de table"
+                                    return
+                                }
+                                // Synchronise le champ pour que handlePrint() puisse l'utiliser
+                                tableNumberInput = numeroStr
+                                isPrintMode = true
+                                showPrinterSheet = true
+                            },
                             onSearchTapped: {
                                 guard !tableNumberInput.isEmpty,
                                       let id = Int(tableNumberInput) else { return }
@@ -184,6 +201,14 @@ public struct HomeScreenIpad: View {
             CustomPaymentBottomSheet(
                 tableNumber: selectedTable,
                 orderItems:  orderViewModel.allItems
+            )
+        }
+        .sheet(isPresented: $showPrinterSheet) {
+            PrinterSelectionSheet(
+                selectedPrinter: $selectedPrinter,
+                onConfirm: {
+                    handlePrint()
+                }
             )
         }
         .onChange(of: tableSearchViewModel.uiState) { state in
@@ -249,27 +274,28 @@ public struct HomeScreenIpad: View {
             if case .success(let commandeId) = state {
                 print("✅ Commande \(commandeId) confirmée")
 
-                Task {
-                    await orderViewModel.printOrder(commandeId: commandeId)
+                showTableScreen  = false
+                tableNumberInput = ""
+                currentTableId   = 0
 
-                    showTableScreen  = false
-                    tableNumberInput = ""
-                    currentTableId   = 0
-                    orderViewModel.reset()
+                let idToPrint = commandeId
+                orderViewModel.reset()
+
+                Task {
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    await orderViewModel.printOrder(commandeId: idToPrint)
                 }
             }
         }
     }
 
     private func handlePrint() {
-        guard !tableNumberInput.isEmpty,
-              let tableNumero = Int(tableNumberInput) else {
+        guard !tableNumberInput.isEmpty, let numero = Int(tableNumberInput) else {
             printMessage = "Numéro de table invalide"
+            isPrintMode = false
             return
         }
-
-        isPrintMode = true
-        Task { await tableSearchViewModel.searchTable(numero: tableNumero) }
+        Task { await tableSearchViewModel.searchTable(numero: numero) }
     }
 }
 

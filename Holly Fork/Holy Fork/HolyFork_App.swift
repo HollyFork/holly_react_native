@@ -2,7 +2,7 @@ import SwiftUI
 import Core
 
 @main
-struct HollyFork_App: App {
+struct HolyFork_App: App {
     @Environment(\.scenePhase) private var scenePhase
     @UIApplicationDelegateAdaptor(Core.AppDelegate.self) var appDelegate
     

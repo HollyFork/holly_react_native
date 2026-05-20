@@ -22,7 +22,7 @@ public struct DeviceLoginScreen: View {
             VStack(spacing: 30) {
                 Spacer()
                 
-                Image("ic_holly_fork_whithout_bg")
+                Image("ic_holy_fork_whithout_bg")
                     .resizable()
                     .scaledToFit()
                     .frame(width: 150, height: 150)

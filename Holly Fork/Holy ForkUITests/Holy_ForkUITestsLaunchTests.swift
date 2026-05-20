@@ -1,6 +1,6 @@
 import XCTest
 
-final class Holly_ForkUITestsLaunchTests: XCTestCase {
+final class Holy_ForkUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {true}
 
